@@ -25,40 +25,14 @@ mean_na <- function(x) {
   mean(x,na.rm=T)
 }
 
-library(rgdal)
-library(raster)
-library(sp)
-library(rhdf5)
-library(gdalUtils)
-library(rgdal)
-library(dplyr)
-library(rlist)
-library(randomForest)
-library(caTools)
-library(caret)
-library(terra)
-library(caTools)
-library(maptools)
-
 #Options for terra and raster 
 terraOptions(progress=10, memfrac=0.6)
 rasterOptions(tmpdir="C:\\",tmptime = 24,progress="text",timer=TRUE,overwrite = T,chunksize=2e+08,maxmemory=1e+8)
 
-#to see a file's SDS
-#Set working directory
-#setwd("/Volumes/G-RAID_Thunderbolt3/Yoder_Project/HLS_L30_Data_Posey/")
-#Get detailed info
-#gdalinfo("HLS.L30.T16SDH.2015006.v1.4.hdf")
-#See subdatasets
-#src <- ("HLS.L30.T16SDH.2015006.v1.4.hdf")
-#sds <- get_subdatasets("HLS.L30.T16SDH.2015006.v1.4.hdf")
-#Get all 12 layers into raster stack (Final Layer is QA)
-#tststack <- stack(gdal_translate(sds[1], "T16DSH.2015006_1.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[2], "T16DSH.2015006_2.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[3], "T16DSH.2015006_3.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[4], "T16DSH.2015006_4.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[5], "T16DSH.2015006_5.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[6], "T16DSH.2015006_6.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[7], "T16DSH.2015006_7.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[8], "T16DSH.2015006_8.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[9], "T16DSH.2015006_9.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[10], "T16DSH.2015006_10.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[11], "T16DSH.2015006_11.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE))
-#plot(tststack)
-
-#Starting over....
+#Files come as HDF
 #  We are using the L30 Landsat-like product (and comparing it with Landsat) - spatial resolution 30 m, temporal resolution 5-day. Our sentinel tiles are: 16T, 17T, 16S, 17S (see here: https://hls.gsfc.nasa.gov/wp-content/uploads/2016/03/MGRS_GZD-1.png)
 #Function to project all to Gtiff
+
 projHDF2GTiff = function(loc, hdfs, gtiffs, lyr, fromSRS, toSRS){ 
   if("gdalUtils" %in% rownames(installed.packages()) == FALSE){
     install.packages("gdalUtils", repos="http://r-forge.r-project.org")
@@ -294,20 +268,8 @@ plot(B7stack)
 plot(B9stack)
 plot(B10stack)
 
-#Now to set up the random forest model------------ 
-#Inputs: 
-#Oct Nov is the first 8 rasters in each stack. 
-#[1] "doy_278" "doy_287" "doy_294" "doy_303" "doy_310" "doy_319"
-#[7] "doy_326" "doy_335" 
-#Median Green Band (Oct Nov) - Band 3
-#Median NIR band (Oct Nov) - Band 5
-#Median SWIR band (Oct Nov) - Band 6
-#Min, Max, Med, amplitude, ratio, and slope NDVI
-#STI (Oct, Nov)
-#SINDRI  (Oct, Nov)
-#GDD (Sum 22/2 to Med, Min, and Max NDVI)
 
-
+#Function to perform bandmath Operations
 Bandmath <- function(tile){
   B3 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/",tile, "_Band_3_Masked.tif", sep=""), overwrite=TRUE)
   B4 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/", tile, "_Band_4_Masked.tif", sep=""), overwrite=TRUE)
@@ -372,9 +334,7 @@ Bandmath("16TDL")
 Bandmath("16TEL")
 Bandmath("16TEK")
 
-#For the random forest-----
-#Mosaic all together? Not really working. Will have to do county by county then mosaic the output together. Probaby faster anyway.
-#Not working: Going to have to do split apply combine
+#Format Windshield surveys by county----
 format_windshield1 <-function(county){
   tst <- as.data.frame(shapefile(paste("/Volumes/G-RAID_Thunderbolt3/IN cover crop transect data/Buffer and transect data joins", county, paste(county, "Fall2015_Join.shp", sep="_"), sep="/")))
   tst <- tst[tst$R_Lon != 0,]
@@ -604,85 +564,4 @@ head(All_counties_input)
 # Summarise Results
 #print(model)
 
-
-#Gonna try github method from here: https://gist.github.com/hakimabdi/720f1481af9eca0b7b97d9856052e0e2
-# Split the data frame into 70-30 by class
-sample <-sample.split(All_counties_input$Cover_Crop, SplitRatio = 0.80)
-trn=subset(All_counties_input, sample==TRUE)
-eva=subset(All_counties_input, sample==FALSE)
-
-# Set up a resampling method in the model training process
-tc <- trainControl(method = "repeatedcv", # repeated cross-validation of the training data
-                   number = 10, # number of folds
-                   repeats = 5, # number of repeats
-                   allowParallel = FALSE, # allow use of multiple cores if specified in training
-                   verboseIter = TRUE) # view the training iterations
-
-# Generate a grid search of candidate hyper-parameter values for inclusion into the models training
-# These hyper-parameter values are examples. You will need a more complex tuning process to achieve high accuracies
-# For example, you can play around with the parameters to see which combinations gives you the highest accuracy. 
-nnet.grid = expand.grid(size = seq(from = 2, to = 10, by = 2), # number of neurons units in the hidden layer 
-                        decay = seq(from = 0.1, to = 0.5, by = 0.1)) # regularization parameter to avoid over-fitting 
-
-rf.grid <- expand.grid(mtry=1:10) # number of variables available for splitting at each tree node
-
-svm.grid <- expand.grid(sigma=seq(from = 0.01, to = 0.10, by = 0.02), # controls for non-linearity in the hyperplane
-                        C=seq(from = 2, to = 10, by = 2)) # controls the influence of each support vector
-
-## Begin training the models. It took my laptop 8 minutes to train all three algorithms
-# Train the neural network model
-nnet_model <- caret::train(x = trn[,(8:(ncol(trn)-1))], y = as.factor(as.integer(as.factor(trn$Cover_Crop))),
-                           method = "nnet", metric="Accuracy", trainControl = tc, tuneGrid = nnet.grid)
-
-# Train the random forest model
-rf_model <- caret::train(x = trn[,(8:(ncol(trn)-1))], y = as.factor(trn$Cover_Crop),
-                         method = "rf", metric="Accuracy", trainControl = tc, tuneGrid = rf.grid)
-
-# Train the support vector machines model
-svm_model <- caret::train(x = trn[,(8:(ncol(trn)-1))], y = as.factor(as.integer(as.factor(trn$Cover_Crop))),
-                          method = "svmRadialSigma", metric="Accuracy", trainControl = tc, tuneGrid = svm.grid)
-
-
-
-## Apply the models to data. It took my laptop 2 minutes to apply all three models
-# Apply the neural network model to the Sentinel-2 data. 
-#In <-raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/IndianaInput.tif")
-#names(In) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-#"NDVI_ratio", "GDD", "SINDRI_med", "STI_med")
-nnet_prediction = raster::predict(t16TEL, model=nnet_model)
-# Apply the random forest model to the Sentinel-2 data
-rf_prediction = raster::predict(t16TEL, model=rf_model)
-rf_prediction = raster::predict(t16TEL, model=rf_model, type="prob")
-?predict
-# Apply the support vector machines model to the Sentinel-2 data
-svm_prediction = raster::predict(t16TEL, model=svm_model)
-
-# Convert the evaluation data into a spatial object using the X and Y coordinates and extract predicted values
-eva.sp = SpatialPointsDataFrame(coords = cbind(eva$R_Lon, eva$R_Lat), data = eva, proj4string = crs("+proj=longlat +datum=WGS84 +no_defs"))
-plot(nnet_prediction)
-plot(rf_prediction)
-writeRaster(rf_prediction,"/Volumes/Macintosh HD/Users/malbarn/Documents/Project_Box_Dises/rf_prediction.tif") 
-writeRaster(rf_prediction_prob, "/Volumes/Macintosh HD/Users/malbarn/Documents/Project_Box_Dises/rf_prediction_prob.tif")
-plot(rf_prediction_prob)
-varImp(rf_model)
-plot(svm_prediction)
-## Superimpose evaluation points on the predicted classification and extract the values
-# neural network
-nnet_Eval = extract(nnet_prediction, eva.sp)
-# random forest
-rf_Eval = extract(rf_prediction, eva.sp)
-# support vector machines
-svm_Eval = extract((svm_prediction), eva.sp)
-
-# Create an error matrix for each of the classifiers
-nnet_errorM = confusionMatrix(as.factor(nnet_Eval),as.factor(eva$Cover_Crop)) # nnet is a poor classifier, so it will not capture all the classes
-rf_errorM = confusionMatrix(as.factor(rf_Eval),as.factor(eva$Cover_Crop))
-svm_errorM = confusionMatrix(as.factor(svm_Eval),as.factor(eva$Cover_Crop))
-
-# Plot the results next to one another along with the 2018 NMD dataset for comparison
-nmd2018 = raster("NMD_S2Small.tif") # load NMD dataset (Nationella Marktaeckedata, Swedish National Land Cover Dataset)
-crs(nmd2018) <- crs(nnet_prediction) # Correct the coordinate reference system so it matches with the rest
-rstack = stack(nmd2018, nnet_prediction, rf_prediction, svm_prediction) # combine the layers into one stack
-names(rstack) = c("NMD 2018", "Single Layer Neural Network", "Random Forest", "Support Vector Machines") # name the stack
-plot(rstack) # plot it! 
 
