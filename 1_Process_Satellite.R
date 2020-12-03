@@ -39,14 +39,9 @@ library(caret)
 library(terra)
 library(caTools)
 library(maptools)
+
+#Options for terra and raster 
 terraOptions(progress=10, memfrac=0.6)
-
-#install.packages("terra")
-citation("rgdal")
-install.packages('raster')
-install.packages("pacman"); pacman::p_load(rgdal,raster,caret,sp,nnet,randomForest,kernlab,e1071)
-#Format input data
-
 rasterOptions(tmpdir="C:\\",tmptime = 24,progress="text",timer=TRUE,overwrite = T,chunksize=2e+08,maxmemory=1e+8)
 
 #to see a file's SDS
