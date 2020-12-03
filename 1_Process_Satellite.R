@@ -1,1 +1,693 @@
 #Code to Process Landsat HLS data!
+---
+  # Transect data (ground truth) over several counties in Indiana that tell us cover crop presence/absence in addition to cover crop type over several fields. 
+  #Specifically we have data for 5 counties: 
+  # Posey County (Fall 2015, Fall 2016, Spring 2017)
+  #Benton County (Fall 2014, Fall 2015, Fall 2016, Spring 2017)
+  #Warren County (Fall )
+  #White County
+  #Gibson County (Fall 2015, Fall 2016, Spring 2017)
+  
+#Comparisons: 
+# Building presence/absence models for cover crop detection
+#Cover crop detection: NDVI -> winter integral only
+#Cover crop detection: NDVI (ratio fall months to winter integral)
+#Cover crop detection: VisNIR
+#Cover crop detection: SWIR (including NDRI and NDTI)
+#Cover crop detection: Thermal Data
+
+#Harmonized Landast-Sentinel 2 data?: 
+# https://hls.gsfc.nasa.gov/products-description/
+
+#  We are using the L30 Landsat-like product (and comparing it with Landsat) - spatial resolution 30 m, temporal resolution 5-day. Our sentinel tiles are: 16T, 17T, 16S, 17S (see here: https://hls.gsfc.nasa.gov/wp-content/uploads/2016/03/MGRS_GZD-1.png)
+#Mean NA basic function for raster operations
+mean_na <- function(x) {
+  mean(x,na.rm=T)
+}
+
+library(rgdal)
+library(raster)
+library(sp)
+library(rhdf5)
+library(gdalUtils)
+library(rgdal)
+library(dplyr)
+library(rlist)
+library(randomForest)
+library(caTools)
+library(caret)
+library(terra)
+library(caTools)
+library(maptools)
+terraOptions(progress=10, memfrac=0.6)
+
+#install.packages("terra")
+citation("rgdal")
+install.packages('raster')
+install.packages("pacman"); pacman::p_load(rgdal,raster,caret,sp,nnet,randomForest,kernlab,e1071)
+#Format input data
+
+rasterOptions(tmpdir="C:\\",tmptime = 24,progress="text",timer=TRUE,overwrite = T,chunksize=2e+08,maxmemory=1e+8)
+
+#to see a file's SDS
+#Set working directory
+#setwd("/Volumes/G-RAID_Thunderbolt3/Yoder_Project/HLS_L30_Data_Posey/")
+#Get detailed info
+#gdalinfo("HLS.L30.T16SDH.2015006.v1.4.hdf")
+#See subdatasets
+#src <- ("HLS.L30.T16SDH.2015006.v1.4.hdf")
+#sds <- get_subdatasets("HLS.L30.T16SDH.2015006.v1.4.hdf")
+#Get all 12 layers into raster stack (Final Layer is QA)
+#tststack <- stack(gdal_translate(sds[1], "T16DSH.2015006_1.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[2], "T16DSH.2015006_2.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[3], "T16DSH.2015006_3.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[4], "T16DSH.2015006_4.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[5], "T16DSH.2015006_5.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[6], "T16DSH.2015006_6.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[7], "T16DSH.2015006_7.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[8], "T16DSH.2015006_8.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[9], "T16DSH.2015006_9.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[10], "T16DSH.2015006_10.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE), gdal_translate(sds[11], "T16DSH.2015006_11.tif", of="GTiff", output_Raster=TRUE, verbose=TRUE))
+#plot(tststack)
+
+#Starting over....
+#  We are using the L30 Landsat-like product (and comparing it with Landsat) - spatial resolution 30 m, temporal resolution 5-day. Our sentinel tiles are: 16T, 17T, 16S, 17S (see here: https://hls.gsfc.nasa.gov/wp-content/uploads/2016/03/MGRS_GZD-1.png)
+#Function to project all to Gtiff
+projHDF2GTiff = function(loc, hdfs, gtiffs, lyr, fromSRS, toSRS){ 
+  if("gdalUtils" %in% rownames(installed.packages()) == FALSE){
+    install.packages("gdalUtils", repos="http://r-forge.r-project.org")
+    require(gdalUtils)
+  } # install and load the gdalUtils package. 
+  setwd(loc) # set the working directory to where the data is
+  suppressWarnings(dir.create(paste(loc,"Projected", lyr,sep="/"))) # create a directory to store projected files
+  for (i in 1:length(hdfs)){ 
+    gdal_translate(hdfs[i],gtiffs[i],sd_index=lyr) # extract the specified HDF layer and save it as a Geotiff
+    gdalwarp(gtiffs[i],paste(loc,"Projected",lyr, gtiffs[i],sep="/"),s_srs=fromSRS,t_srs=toSRS,srcnodata=-1000,dstnodata=NA,overwrite = T) # project geotiffs
+    unlink(gtiffs[i]) # delete unprojected geotiffs to save space
+  }
+}
+
+#load variables - did this for both 2015 & 2016
+myloc= "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2015/L30"
+hdfs1 = list.files(getwd(), pattern="hdf$")
+gtiffs1 = gsub("hdf","tif",hdfs1) #
+frm.srs = "+proj=utm +zone=16 +ellps=WGS84 + datum=WGS84 + units=m + no_defs" # original HDF SRS
+to.srs = "+proj=longlat +datum=WGS84 +no_defs" # desired GeoTIFF SRS
+# lyr is the HDF layer you want to extract. In this example it is "1" to 
+# signify the first layer in the HDF file i.e. NDVI
+# execute the function
+
+#Project to .tiff - do it with all bands - files will be named by L30 Subdataset number 
+#Band 1
+projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 1, fromSRS = frm.srs, toSRS = to.srs)
+#Band 2
+projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 2, fromSRS = frm.srs, toSRS = to.srs)
+#Band 3
+projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 3, fromSRS = frm.srs, toSRS = to.srs)
+#Band 4
+projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 4, fromSRS = frm.srs, toSRS = to.srs)
+#Band 5
+projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 5, fromSRS = frm.srs, toSRS = to.srs)
+#Band 6
+projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 6, fromSRS = frm.srs, toSRS = to.srs)
+#Band 7
+projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 7, fromSRS = frm.srs, toSRS = to.srs)
+#Band 9 
+projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 8, fromSRS = frm.srs, toSRS = to.srs)
+#Band 10 
+projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 9, fromSRS = frm.srs, toSRS = to.srs)
+#Band 11
+projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 10, fromSRS = frm.srs, toSRS = to.srs)
+#QA Band
+projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 11, fromSRS = frm.srs, toSRS = to.srs)
+rm(myloc,hdfs1,gtiffs1,frm.srs,to.srs,s.nodata,d.nodata) # remove variables to save memory
+
+#Get detailed info
+#Get (NDVI) for 2016
+#Let's create a raster stack for each 2015-2016 WY timestep...with all relevant bands (3,4,5,6,7)
+
+#Getting 2015 band 4
+setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2015/L30/Projected/4")
+band4_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+#Getting 2016 band 4
+setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2016/L30/Projected/4")
+band4_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+#Moving all files in the folloiwng list to
+b42016 <- c(band4_2015[c(35:45)],band4_2016[c(1:34)])
+#All of band 4 for 2016 is stacked! 
+tststack <- stack(b42016)
+#Changes the names to day of year
+names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
+#Takes about 143 seconds
+scaled_tstack <- calc(tststack, function(x){x*0.0001})
+writeRaster(scaled_tstack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_4.tif")
+
+
+#Now for band 5....
+#Getting 2015 band 5
+setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2015/L30/Projected/5")
+band5_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+#Getting 2016 band 5
+setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2016/L30/Projected/5")
+band5_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+#Moving all files in the folloiwng list to
+b52016 <- c(band5_2015[c(35:45)],band5_2016[c(1:34)])
+#All of band 5 for 2016 is stacked! 
+tststack <- stack(b52016)
+#Changes the names to day of year
+names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
+#Takes about 143 seconds
+scaled_tstack <- calc(tststack, function(x){x*0.0001})
+writeRaster(scaled_tstack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_5.tif")
+
+#Now for band 6....
+#Getting 2015 band 6
+setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2015/L30/Projected/6")
+band6_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+#Getting 2016 band 6
+setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2016/L30/Projected/6")
+band6_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+#Moving all files in the folloiwng list to
+b62016 <- c(band6_2015[c(35:45)],band6_2016[c(1:34)])
+#All of band 6 for 2016 is stacked! 
+tststack <- stack(b62016)
+#Changes the names to day of year
+names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
+#Takes about 143 seconds
+scaled_tstack <- calc(tststack, function(x){x*0.0001})
+writeRaster(scaled_tstack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_6.tif")
+
+#Now for band 7....
+#Getting 2015 band 7
+setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2015/L30/Projected/7")
+band7_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+#Getting 2016 band 7
+setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2016/L30/Projected/7")
+band7_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+#Moving all files in the folloiwng list to
+b72016 <- c(band7_2015[c(35:45)],band7_2016[c(1:34)])
+#All of band 7 for 2016 is stacked! 
+tststack <- stack(b72016)
+#Changes the names to day of year
+names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
+#Takes about 143 seconds
+scaled_tstack <- calc(tststack, function(x){x*0.0001})
+writeRaster(scaled_tstack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_7.tif")
+
+#Now for band 3....
+#Getting 2015 band 3
+setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2015/L30/Projected/3")
+band3_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+#Getting 2016 band 3
+setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2016/L30/Projected/3")
+band3_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+#Moving all files in the folloiwng list to
+b32016 <- c(band3_2015[c(35:45)],band3_2016[c(1:34)])
+#All of band 3 for 2016 is stacked! 
+tststack <- stack(b32016)
+#Changes the names to day of year
+names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
+#Takes about 143 seconds
+scaled_tstack <- calc(tststack, function(x){x*0.0001})
+writeRaster(scaled_tstack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_3.tif")
+
+#Now band 10....
+setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2015/L30/Projected/10")
+band10_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+#Getting 2016 band 10
+setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2016/L30/Projected/10")
+band10_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+#Moving all files in the folloiwng list to
+b102016 <- c(band10_2015[c(35:45)],band10_2016[c(1:34)])
+#All of band 10 for 2016 is stacked! 
+tststack <- stack(b102016)
+#Changes the names to day of year
+names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
+#Takes about 143 seconds
+scaled_tstack <- calc(tststack, function(x){x*0.0001})
+writeRaster(scaled_tstack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_10.tif")
+
+#Now band 9
+setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2015/L30/Projected/9")
+band9_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+#Getting 2016 band 9
+setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2016/L30/Projected/9")
+band9_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+#Moving all files in the folloiwng list to
+b92016 <- c(band9_2015[c(35:45)],band9_2016[c(1:34)])
+#All of band 3 for 2016 is stacked! 
+tststack <- stack(b92016)
+#Changes the names to day of year
+names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
+#Takes about 143 seconds
+scaled_tstack <- calc(tststack, function(x){x*0.0001})
+writeRaster(scaled_tstack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_9.tif")
+
+
+#Getting 2016 band QA
+setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2015/L30/Projected/11")
+band11_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2016/L30/Projected/11")
+band11_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+#Moving all files in the folloiwng list to
+b112016 <- c(band11_2015[c(35:45)],band11_2016[c(1:34)])
+#All of band 3 for 2016 is stacked! 
+tststack <- stack(b112016)
+#Changes the names to day of year
+names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
+#Takes about 143 seconds
+writeRaster(tststack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_11.tif")
+
+#All right, now for the calculations!!!
+B3stack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_3.tif")
+B4stack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_4.tif")
+B5stack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_5.tif")
+B6stack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_6.tif")
+B7stack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_7.tif")
+B9stack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_9.tif")
+B10stack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_10.tif")
+QAstack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_11.tif")
+
+#Now adding landast band 10 -> L30 band 9 
+plot(QAstack[[3]])
+plot(QAstack[[4]])
+plot(B5stack[[4]])
+plot(B4stack[[4]])
+
+#This is probably not right but anything > 128 is ok I think
+#Create mask....
+QAstack[QAstack<128] <- NA
+writeRaster(QAstack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/QA_2015_2016.tif")
+QAstack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/QAQA_2015_2016.tif")
+B4 <- mask(B4stack, QAstack)
+B5 <- mask(B5stack, QAstack)
+B6 <- mask(B6stack, QAstack)
+B7 <- mask(B7stack, QAstack)
+B3 <- mask(B3stack, QAstack)
+B9 <- mask(B9stack, QAstack)
+B10 <- mask(B10stack, QAstack)
+
+writeRaster(B4, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_4_Masked.tif")
+writeRaster(B5, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_5_Masked.tif")
+writeRaster(B6, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_6_Masked.tif")
+writeRaster(B7, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_7_Masked.tif")
+writeRaster(B3, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_3_Masked.tif")
+writeRaster(B9, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_9_Masked.tif")
+writeRaster(B10, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_10_Masked.tif")
+
+#get average of first 5 observations (Oct Nov)
+
+plot(NDVI, zlim=c(0,1))
+plot(STI)
+plot(SINDRI)
+plot(B3stack)
+plot(B4stack)
+plot(B5stack)
+plot(B6stack)
+plot(B7stack)
+plot(B9stack)
+plot(B10stack)
+
+#Now to set up the random forest model------------ 
+#Inputs: 
+#Oct Nov is the first 8 rasters in each stack. 
+#[1] "doy_278" "doy_287" "doy_294" "doy_303" "doy_310" "doy_319"
+#[7] "doy_326" "doy_335" 
+#Median Green Band (Oct Nov) - Band 3
+#Median NIR band (Oct Nov) - Band 5
+#Median SWIR band (Oct Nov) - Band 6
+#Min, Max, Med, amplitude, ratio, and slope NDVI
+#STI (Oct, Nov)
+#SINDRI  (Oct, Nov)
+#GDD (Sum 22/2 to Med, Min, and Max NDVI)
+
+
+Bandmath <- function(tile){
+  B3 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/",tile, "_Band_3_Masked.tif", sep=""), overwrite=TRUE)
+  B4 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/", tile, "_Band_4_Masked.tif", sep=""), overwrite=TRUE)
+  B5 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/", tile, "_Band_5_Masked.tif", sep=""), overwrite=TRUE)
+  B6 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/", tile, "_Band_6_Masked.tif", sep=""), overwrite=TRUE)
+  B7 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/", tile, "_Band_7_Masked.tif", sep=""), overwrite=TRUE)
+  
+  NDVI <- ((B5 - B4)/(B5 + B4))
+  writeRaster(NDVI, paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/",tile,"_NDVI.tif", sep=""), overwrite=TRUE)
+  STI <- (B6/B7)
+  writeRaster(STI, paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/",tile,"_STI.tif", sep=""), overwrite=TRUE)
+  SINDRI <- ((B6 - B7)/(B6 + B7))
+  writeRaster(SINDRI, paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/",tile,"_SINDRI.tif", sep=""), overwrite=TRUE)
+  #Important - before calculations....
+  print("scalingNDVI")
+  NDVI[NDVI>1] <- NA
+  NDVI[NDVI<0] <- NA
+  
+  writeRaster(NDVI, paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/",tile, "_NDVI_scaled.tif", sep=""), overwrite=TRUE)
+  print("Bandmath Calcs")
+  #For the band medians - just get the median of the first 8 observations------#changing from 2-10 (NDVI lag)
+  fun8 <- function(x){median(x, na.rm=TRUE)}
+  B3_med <- app(B3[[2:10]], fun8)
+  B5_med <- app(B5[[2:10]], fun8)
+  B6_med <- app(B6[[2:10]], fun8)
+  NDVI_med <- app(NDVI[[2:10]], fun8)
+  NDVI_mean <- app(NDVI[[2:10]], mean_na)
+  NDVI_max <- app(NDVI[[2:10]], fun=function(x){max(x, na.rm=TRUE)})
+  NDVI_min <- app(NDVI[[2:10]], fun=function(x){max(x, na.rm=TRUE)})
+  NDVI_fullmax <- app(NDVI, fun=function(x){max(x, na.rm=TRUE)})
+  NDVI_amp <- NDVI_fullmax-NDVI_max
+  NDVI_ratio <- NDVI_med/NDVI_fullmax
+  STI_med <- app(STI[[2:10]], fun8)
+  SINDRI_med <- app(SINDRI[[2:10]], fun8)
+  ### A much (> 100 times) faster approach is to directly use 
+  ### linear algebra and pre-compute some constants
+  
+  which.max.na <- function(x, ...){
+    max_idx <- which.max(x)
+    ifelse(length(max_idx)==0,return(NA),return(max_idx))
+    
+  }
+  print("GDD calc")
+  GDD <-app(NDVI, which.max.na)
+  
+  
+  inputs <- c(B3_med, B5_med, B6_med, NDVI_med, NDVI_mean, NDVI_max, NDVI_min, NDVI_fullmax, NDVI_amp, NDVI_ratio, GDD, SINDRI_med, STI_med)
+  inputs
+  print(str(inputs))
+  names(inputs) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                     "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")
+  writeRaster(inputs, paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/",tile, "_input_stack.tif"), overwrite=TRUE)
+  gc()  
+  print("done")
+  
+}
+
+rasterOptions(maxmemory = 1e+09, progress="text", overwrite=TRUE, chunksize=1e10)
+list <- c("16SDH", "16SFH", "16SDJ", "16SEJ", "16SEH", "16SFJ", "16TFK", "16TEK", "16TDK", "16TDL", "16TEL", "16TFL")
+#lapply(list[8:12], Bandmath)
+Bandmath("16TDL")
+Bandmath("16TEL")
+Bandmath("16TEK")
+
+#For the random forest-----
+#Mosaic all together? Not really working. Will have to do county by county then mosaic the output together. Probaby faster anyway.
+#Not working: Going to have to do split apply combine
+format_windshield1 <-function(county){
+  tst <- as.data.frame(shapefile(paste("/Volumes/G-RAID_Thunderbolt3/IN cover crop transect data/Buffer and transect data joins", county, paste(county, "Fall2015_Join.shp", sep="_"), sep="/")))
+  tst <- tst[tst$R_Lon != 0,]
+  #tst <- tst[tst$R_lon != 0,]
+  print(head(tst))
+  xy <- tst[,c(9,8)]
+  print(head(xy))
+  spdf <- SpatialPointsDataFrame(coords=xy, data=tst, proj4string=CRS("+proj=longlat +datum=WGS84 +no_defs"))
+  return(as.list(c(xy, spdf)))
+}
+format_windshield4 <-function(county){
+  tst <- as.data.frame(shapefile(paste("/Volumes/G-RAID_Thunderbolt3/IN cover crop transect data/Buffer and transect data joins", county, paste(county, "Fall2015_Join.shp", sep="_"), sep="/")))
+  tst <- tst[tst$R_Lon != 0,]
+  print(head(tst))
+  #tst <- tst[tst$R_lon != 0,]
+  xy <- tst[,c(10,9)]
+  print(head(xy))
+  spdf <- SpatialPointsDataFrame(coords=xy, data=tst, proj4string=CRS("+proj=longlat +datum=WGS84 +no_defs"))
+  return(as.list(c(xy, spdf)))
+}
+format_windshield2 <-function(county){
+  tst <- as.data.frame(shapefile(paste("/Volumes/G-RAID_Thunderbolt3/IN cover crop transect data/Buffer and transect data joins", county, paste(county, "Fall2015_Join.shp", sep="_"), sep="/")))
+  #tst <- tst[tst$R_Lon != 0,]
+  print(head(tst))
+  tst <- tst[tst$R_lon != 0,]
+  xy <- tst[,c(8,7)]
+  print(head(xy))
+  spdf <- SpatialPointsDataFrame(coords=xy, data=tst, proj4string=CRS("+proj=longlat +datum=WGS84 +no_defs"))
+  return(as.list(c(xy, spdf)))
+}
+format_windshield3 <-function(county){
+  tst <- as.data.frame(shapefile(paste("/Volumes/G-RAID_Thunderbolt3/IN cover crop transect data/Buffer and transect data joins", county, paste(county, "Fall2015_Join.shp", sep="_"), sep="/")))
+  print(head(tst))
+  #tst <- tst[tst$R_Lon != 0,]
+  tst <- tst[tst$R_lon != 0,]
+  xy <- tst[,c(9,8)]
+  print(head(xy))
+  spdf <- SpatialPointsDataFrame(coords=xy, data=tst, proj4string=CRS("+proj=longlat +datum=WGS84 +no_defs"))
+  return(as.list(c(xy, spdf)))
+}
+
+Posey  <- format_windshield1("Posey")
+Benton <- format_windshield2("Benton")
+Gibson <- format_windshield3("Gibson")
+Warren <- format_windshield1("Warren")
+White <- format_windshield4("White")
+
+tomerge <- as.list(list.files(path="/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands", recursive = TRUE, pattern = "*input_stack", full.names = TRUE))
+str(tomerge)
+tomerge <- tomerge[-3]
+
+e <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
+indiana <- raster(e)
+proj4string(indiana) <- CRS('+init=epsg:4269')
+writeRaster(indiana, file="IndianaInput.tif", format="GTiff")
+mosaic_rasters(gdalfile=tomerge, dst_dataset="IndianaInput.tif", of="GTiff", output.vrt=NULL, separate=TRUE, verbose=TRUE, output_Raster = TRUE, CHECK_DISK_FREE_SPACE=FALSE)
+gdalinfo("IndianaInput.tif")
+#This file is giant-------
+gc()
+In <-terra::rast("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/IndianaInput.tif", NAvalue="-Inf")
+#Mosaic didn't work quite like I thought it did. There's 169 layers here (13 x 13). So layers 1-13 are for 1 tile, 14-26 are for the second, etc. This means we're going to need to do some band math
+#By layer
+#In[In==-Inf] <- NA
+#Spit apply combine
+Set1 <- In[[1:13]]
+Set2 <- In[[14:26]]
+Set3 <- In[[27:39]]
+Set4 <- In[[40:52]]
+Set5 <- In[[53:65]]
+Set6 <- In[[65:78]]
+Set7 <- In[[79:91]]
+Set8 <- In[[92:104]]
+Set9 <- In[[105:117]]
+Set10 <- In[[118:130]]
+Set11 <- In[[131:143]]
+Set12 <- In[[144:156]]
+
+gc()
+clamp(Set1, -1, 100)
+Set1[Set1==-Inf] <- NA
+coSet3[Set3==-Inf] <- NA
+Set4[Set4==-Inf] <- NA
+Set5[Set5==-Inf] <- NA
+Set6[Set6==-Inf] <- NA
+Set7[Set7==-Inf] <- NA
+Set8[Set8==-Inf] <- NA
+Set9[Set9==-Inf] <- NA
+Set10[Set10==-Inf] <- NA
+Set11[Set11==-Inf] <- NA
+Set12[Set12==-Inf] <- NA
+
+Set1[Set1==Inf] <- NA
+function(x) {
+  mean(x,na.rm=T)
+}
+plot(In[[2]])
+min(In[[2]])
+
+t16SDH<- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16SDH_input_stack.tif")
+names(t16SDH) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")
+#16SCH<- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16SCDH_input_stack.tif")
+#16SDG <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16SDG_input_stack.tif")
+t16TDK<- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16TDK _input_stack.tif")
+names(t16TDK) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")
+t16TDL<- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16TDL _input_stack.tif")
+names(t16TDL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")
+t16TEL<- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16TEL_input_stack.tif")
+names(t16TEL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")
+
+Posey_Rf_input <- cbind(as.data.frame(Posey[[3]]), extract(t16SDH, (cbind(Posey[[1]] , Posey[[2]])), buffer=40, fun=median))
+Gibson_Rf_input <- cbind(as.data.frame(Gibson[[3]]), extract(t16SDH, (cbind(Gibson[[1]] , Gibson[[2]])), buffer=40, fun=median))
+
+
+Warren_coords <- cbind(Warren[[1]], Warren[[2]])
+Warren_Rf_input <- cbind(as.data.frame(Warren[[3]]), extract(t16TDK, Warren_coords, buffer=40, fun=median))
+
+White_coords <- cbind(White[[1]], White[[2]])
+origin(t16TEL) <- 0
+origin(t16TDL) <- 0
+White_raster <- raster::mosaic(t16TEL, t16TDL, fun=median)
+t16TEL
+t16TDL
+plot(t16TEL)
+plot(t16TDL)
+t16TEL
+t16TDL
+#White_ext <- rbind(extract(t16TDL, White_coords, buffer=40, fun=median), extract(t16TEL, White_coords, buffer=40, fun=median))
+White_Rf_input <- cbind(as.data.frame(White[[3]]), extract(t16TEL, White_coords, buffer=10, fun=median))
+#Benton kinda messed up - hold for validation?
+Benton_Rf_input <- cbind(as.data.frame(Benton[[3]]), extract(t16TDK, (cbind(Benton[[1]] , Benton[[2]])), fun=median))
+head(Posey_Rf_input)
+Posey_Rf_input <- Posey_Rf_input[c("R_Lat", "R_Lon", "Prev_Crp", "Fall_Tilla", "Cover_Crop", "CC_Method", "B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")]
+
+Posey_Rf_input$county <- "Posey"
+
+head(Benton_Rf_input)
+Benton_Rf_input <- Benton_Rf_input[c("R_lat", "R_lon", "Prev_Crp", "Fall_Tilla", "Cover_Crop", "CC_Method", "B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                                     "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")]
+Benton_Rf_input <- rename(Benton_Rf_input, R_Lat=R_lat, R_Lon=R_lon)
+Benton_Rf_input$county <- "Benton"
+
+head(Gibson_Rf_input)
+Gibson_Rf_input <- Gibson_Rf_input[c("R_lat", "R_lon", "Prev_Crp", "Fall_Tilla", "Cover_Crop", "CC_Method", "B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                                     "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")]
+
+Gibson_Rf_input <- rename(Gibson_Rf_input, R_Lat=R_lat, R_Lon=R_lon)
+
+Gibson_Rf_input$county <- "Gibson"
+
+head(Warren_Rf_input)
+Warren_Rf_input <- Warren_Rf_input[c("R_Lat", "R_Lon", "Prev_Crp", "Fall_Tilla", "Cover_Crop", "CC_Method", "B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                                     "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")]
+
+Warren_Rf_input$county <- "Warren"
+
+#rename(Warren_Rf_input, R_Lat=R_lat, R_Lon=R_lon)
+
+head(White_Rf_input)
+White_Rf_input <- White_Rf_input[c("R_Lat", "R_Lon", "Prev_Crp", "Fall_Tilla", "Cover_Crop", "CC_Method", "B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")]
+White_Rf_input$county <- "White"
+#rename(White_Rf_input, R_Lat=R_lat, R_Lon=R_lon)
+
+All_counties_input <- do.call("rbind", list(Posey_Rf_input, Benton_Rf_input, Gibson_Rf_input, Warren_Rf_input, White_Rf_input))
+write.csv(All_counties_input, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RS_input_all.csv")
+
+#recode cover crop: 
+#All_counties_input <- read.csv("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RS_input_all.csv")
+All_counties_input <- read.csv("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/inputs_with_LST.csv")
+All_counties_input$Cover_Crop <- recode(All_counties_input$Cover_Crop, N="0", G="1", BC="1", C="1", B="1", W="1", L="1", P="1") 
+#set data aside for testing
+#All_input = subset(All_counties_input, select = -c(FID_,type, comment, N, S, W, E, ID, Field_No, Prev_Crp, Fall_Tilla, Residue, CC_Quality, CC_Method, BUFF_DIST, ORIG_FID))
+All_counties_input <- na.omit(All_counties_input)
+summary(All_counties_input)
+head(All_counties_input)
+#Bounding Box state of indiana
+#INext <- extent(c(-88.09776,	-84.784579,	37.771742,	41.760592))
+#This is a dumb way to do this but whatever
+#tst1 <- terra::expand(tst1, INext)
+#tst2 <- terra::expand(tst2, INext)
+#tst2 <- terra::resample(tst2, tst1)
+#tst3  <- raster::mosaic(stack(tst1), stack(tst2), fun=mean)
+#plot(tst3[[1]])
+#tst3 <- terra::expand(rast(tst3), INext)
+#names(tst3) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+#                "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")
+#plot(tst3[[1]])
+#terra::merge(inputs1,inputs2, tolerance=0.1)
+#origin(inputs1)
+#origin(inputs2)
+#plot(inputs1)
+#plot(inputs2)
+#str(Posey_Rf_input)
+#Posey_Rf_input$Cover_Crop <- as.factor(Posey_Rf_input$Cover_Crop)
+#summary(Posey_Rf_input)
+#recode cover crop: 
+#Posey_Rf_input$Cover_Crop <- recode(Posey_Rf_input$Cover_Crop, N="0", G="1", BC="1", C="1", B="1", W="1", L="1", P="1") 
+#set data aside for testing
+#Posey_input = subset(Al_input, select = -c(FID_,type, comment, N, S, W, E, ID, Field_No, Prev_Crp, Fall_Tilla, Residue, CC_Quality, CC_Method, BUFF_DIST, ORIG_FID))
+#Posey_input <- na.omit(Posey_input)
+#summary(Posey_input)
+#sample <-sample.split(Posey_input$Cover_Crop, SplitRatio = 0.85)
+#train=subset(Posey_input, sample==TRUE)
+#test=subset(Posey_input, sample==FALSE)
+#dim(train)
+#dim(test)
+#rf <- randomForest(Cover_Crop ~., data=train, strata=train, sampsize=c(20,20))
+#pred = predict(rf, newdata=test[-1])
+#cm = table(test[,1], pred)
+#cm
+#print(rf)
+
+#importance(rf)
+#varImpPlot(rf)
+#pred1=predict(rf,type = "prob")
+
+
+#kfold
+#train_control <- trainControl(method="cv", number=10)
+# Fit Naive Bayes Model
+#model <- train(Cover_Crop~., data=Posey_input, trControl=train_control, method="nb")
+# Summarise Results
+#print(model)
+
+
+#Gonna try github method from here: https://gist.github.com/hakimabdi/720f1481af9eca0b7b97d9856052e0e2
+# Split the data frame into 70-30 by class
+sample <-sample.split(All_counties_input$Cover_Crop, SplitRatio = 0.80)
+trn=subset(All_counties_input, sample==TRUE)
+eva=subset(All_counties_input, sample==FALSE)
+
+# Set up a resampling method in the model training process
+tc <- trainControl(method = "repeatedcv", # repeated cross-validation of the training data
+                   number = 10, # number of folds
+                   repeats = 5, # number of repeats
+                   allowParallel = FALSE, # allow use of multiple cores if specified in training
+                   verboseIter = TRUE) # view the training iterations
+
+# Generate a grid search of candidate hyper-parameter values for inclusion into the models training
+# These hyper-parameter values are examples. You will need a more complex tuning process to achieve high accuracies
+# For example, you can play around with the parameters to see which combinations gives you the highest accuracy. 
+nnet.grid = expand.grid(size = seq(from = 2, to = 10, by = 2), # number of neurons units in the hidden layer 
+                        decay = seq(from = 0.1, to = 0.5, by = 0.1)) # regularization parameter to avoid over-fitting 
+
+rf.grid <- expand.grid(mtry=1:10) # number of variables available for splitting at each tree node
+
+svm.grid <- expand.grid(sigma=seq(from = 0.01, to = 0.10, by = 0.02), # controls for non-linearity in the hyperplane
+                        C=seq(from = 2, to = 10, by = 2)) # controls the influence of each support vector
+
+## Begin training the models. It took my laptop 8 minutes to train all three algorithms
+# Train the neural network model
+nnet_model <- caret::train(x = trn[,(8:(ncol(trn)-1))], y = as.factor(as.integer(as.factor(trn$Cover_Crop))),
+                           method = "nnet", metric="Accuracy", trainControl = tc, tuneGrid = nnet.grid)
+
+# Train the random forest model
+rf_model <- caret::train(x = trn[,(8:(ncol(trn)-1))], y = as.factor(trn$Cover_Crop),
+                         method = "rf", metric="Accuracy", trainControl = tc, tuneGrid = rf.grid)
+
+# Train the support vector machines model
+svm_model <- caret::train(x = trn[,(8:(ncol(trn)-1))], y = as.factor(as.integer(as.factor(trn$Cover_Crop))),
+                          method = "svmRadialSigma", metric="Accuracy", trainControl = tc, tuneGrid = svm.grid)
+
+
+
+## Apply the models to data. It took my laptop 2 minutes to apply all three models
+# Apply the neural network model to the Sentinel-2 data. 
+#In <-raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/IndianaInput.tif")
+#names(In) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+#"NDVI_ratio", "GDD", "SINDRI_med", "STI_med")
+nnet_prediction = raster::predict(t16TEL, model=nnet_model)
+# Apply the random forest model to the Sentinel-2 data
+rf_prediction = raster::predict(t16TEL, model=rf_model)
+rf_prediction = raster::predict(t16TEL, model=rf_model, type="prob")
+?predict
+# Apply the support vector machines model to the Sentinel-2 data
+svm_prediction = raster::predict(t16TEL, model=svm_model)
+
+# Convert the evaluation data into a spatial object using the X and Y coordinates and extract predicted values
+eva.sp = SpatialPointsDataFrame(coords = cbind(eva$R_Lon, eva$R_Lat), data = eva, proj4string = crs("+proj=longlat +datum=WGS84 +no_defs"))
+plot(nnet_prediction)
+plot(rf_prediction)
+writeRaster(rf_prediction,"/Volumes/Macintosh HD/Users/malbarn/Documents/Project_Box_Dises/rf_prediction.tif") 
+writeRaster(rf_prediction_prob, "/Volumes/Macintosh HD/Users/malbarn/Documents/Project_Box_Dises/rf_prediction_prob.tif")
+plot(rf_prediction_prob)
+varImp(rf_model)
+plot(svm_prediction)
+## Superimpose evaluation points on the predicted classification and extract the values
+# neural network
+nnet_Eval = extract(nnet_prediction, eva.sp)
+# random forest
+rf_Eval = extract(rf_prediction, eva.sp)
+# support vector machines
+svm_Eval = extract((svm_prediction), eva.sp)
+
+# Create an error matrix for each of the classifiers
+nnet_errorM = confusionMatrix(as.factor(nnet_Eval),as.factor(eva$Cover_Crop)) # nnet is a poor classifier, so it will not capture all the classes
+rf_errorM = confusionMatrix(as.factor(rf_Eval),as.factor(eva$Cover_Crop))
+svm_errorM = confusionMatrix(as.factor(svm_Eval),as.factor(eva$Cover_Crop))
+
+# Plot the results next to one another along with the 2018 NMD dataset for comparison
+nmd2018 = raster("NMD_S2Small.tif") # load NMD dataset (Nationella Marktaeckedata, Swedish National Land Cover Dataset)
+crs(nmd2018) <- crs(nnet_prediction) # Correct the coordinate reference system so it matches with the rest
+rstack = stack(nmd2018, nnet_prediction, rf_prediction, svm_prediction) # combine the layers into one stack
+names(rstack) = c("NMD 2018", "Single Layer Neural Network", "Random Forest", "Support Vector Machines") # name the stack
+plot(rstack) # plot it! 
+
