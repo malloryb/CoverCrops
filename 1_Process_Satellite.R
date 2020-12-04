@@ -19,7 +19,8 @@
 #Harmonized Landast-Sentinel 2 data?: 
 # https://hls.gsfc.nasa.gov/products-description/
 
-packrat::init()
+pacman::p_load(raster, gdalUtils, terra, dplyr, rgdal, sp, rhdf5, rlist, randomForest, caTools, caret, maptools)
+
 #  We are using the L30 Landsat-like product (and comparing it with Landsat) - spatial resolution 30 m, temporal resolution 5-day. Our sentinel tiles are: 16T, 17T, 16S, 17S (see here: https://hls.gsfc.nasa.gov/wp-content/uploads/2016/03/MGRS_GZD-1.png)
 #Mean NA basic function for raster operations
 mean_na <- function(x) {
@@ -61,6 +62,7 @@ Process_L30 <- function(x,y){
   print("Band1 to Tiff")
   #Band 1
   projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 1, fromSRS = frm.srs, toSRS = to.srs)
+  return(B1)}
   #Band 2
   projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 2, fromSRS = frm.srs, toSRS = to.srs)
   #Band 3
@@ -83,7 +85,7 @@ Process_L30 <- function(x,y){
   projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 10, fromSRS = frm.srs, toSRS = to.srs)
   #QA Band
   projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 11, fromSRS = frm.srs, toSRS = to.srs)
-  rm(myloc,hdfs1,gtiffs1,frm.srs,to.srs,s.nodata,d.nodata) # remove variables to save memory
+  rm(myloc,hdfs1,gtiffs1,frm.srs,to.srs,srcnodata,dstnodata) # remove variables to save memory
 #Now create raster stacks
   return()
   print("done")
@@ -93,6 +95,7 @@ write_bandstacks <- function(x, d, c){
   #D is the year and C is the year-1
   #Now for band 3....
   #Getting 2015 band 3
+  print("band3")
   myloc1=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, c, "L30/Projected/3", sep="/")
   setwd(myloc1)
   band3_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
@@ -106,134 +109,173 @@ write_bandstacks <- function(x, d, c){
   print(paste("stacking", c, d, "to get water year", sep=" "))
   b32016 <- c(band3_2015[c(35:45)],band3_2016[c(1:34)])
   #All of band 3 for 2016 is stacked! 
-  print(b32016)
   tststack <- raster::stack(b32016)
   #Changes the names to day of year
   names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
   #Takes about 143 seconds
   scaled_tstack <- calc(tststack, function(x){x*0.0001})
   out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015_2016_Input/Band_3.tif",sep="/")
-  writeRaster(scaled_tstack, out)
+  writeRaster(scaled_tstack, out, overwrite=TRUE)
+  
+  print("band4")
+  myloc1=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, c, "L30/Projected/4", sep="/")
+  setwd(myloc1)
+  band4_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+  #Getting 2016 band 3
+  myloc2=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, d, "L30/Projected/4", sep="/")
+  setwd(myloc2)
+  band4_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+  print(length(band4_2016))
+  print(length(band4_2015))
+  #Moving all files in the folloiwng list to
+  print(paste("stacking", c, d, "to get water year", sep=" "))
+  b42016 <- c(band4_2015[c(35:45)],band4_2016[c(1:34)])
+  #All of band 3 for 2016 is stacked! 
+  tststack <- raster::stack(b32016)
+  #Changes the names to day of year
+  names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
+  #Takes about 143 seconds
+  scaled_tstack <- calc(tststack, function(x){x*0.0001})
+  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015_2016_Input/Band_4.tif",sep="/")
+  writeRaster(scaled_tstack, out, overwrite=TRUE)
+  
+  print("band5")
+  myloc1=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, c, "L30/Projected/5", sep="/")
+  setwd(myloc1)
+  band5_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+  #Getting 2016 band 3
+  myloc2=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, d, "L30/Projected/5", sep="/")
+  setwd(myloc2)
+  band5_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+  print(length(band5_2016))
+  print(length(band5_2015))
+  #Moving all files in the folloiwng list to
+  print(paste("stacking", c, d, "to get water year", sep=" "))
+  b32016 <- c(band5_2015[c(35:45)],band5_2016[c(1:34)])
+  #All of band 3 for 2016 is stacked! 
+  tststack <- raster::stack(b32016)
+  #Changes the names to day of year
+  names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
+  #Takes about 143 seconds
+  scaled_tstack <- calc(tststack, function(x){x*0.0001})
+  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015_2016_Input/Band_5.tif",sep="/")
+  writeRaster(scaled_tstack, out, overwrite=TRUE)
+  
+  print("band6")
+  myloc1=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, c, "L30/Projected/6", sep="/")
+  setwd(myloc1)
+  band6_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+  #Getting 2016 band 3
+  myloc2=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, d, "L30/Projected/6", sep="/")
+  setwd(myloc2)
+  band6_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+  print(length(band6_2016))
+  print(length(band6_2015))
+  #Moving all files in the folloiwng list to
+  print(paste("stacking", c, d, "to get water year", sep=" "))
+  b32016 <- c(band6_2015[c(35:45)],band6_2016[c(1:34)])
+  #All of band 3 for 2016 is stacked! 
+  tststack <- raster::stack(b32016)
+  #Changes the names to day of year
+  names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
+  #Takes about 143 seconds
+  scaled_tstack <- calc(tststack, function(x){x*0.0001})
+  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015_2016_Input/Band_6.tif",sep="/")
+  writeRaster(scaled_tstack, out, overwrite=TRUE)
+  
+  print("band7")
+  myloc1=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, c, "L30/Projected/7", sep="/")
+  setwd(myloc1)
+  band7_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+  #Getting 2016 band 3
+  myloc2=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, d, "L30/Projected/7", sep="/")
+  setwd(myloc2)
+  band7_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+  print(length(band7_2016))
+  print(length(band7_2015))
+  #Moving all files in the folloiwng list to
+  print(paste("stacking", c, d, "to get water year", sep=" "))
+  b32016 <- c(band7_2015[c(35:45)],band7_2016[c(1:34)])
+  #All of band 3 for 2016 is stacked! 
+  tststack <- raster::stack(b32016)
+  #Changes the names to day of year
+  names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
+  #Takes about 143 seconds
+  scaled_tstack <- calc(tststack, function(x){x*0.0001})
+  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015_2016_Input/Band_7.tif",sep="/")
+  writeRaster(scaled_tstack, out, overwrite=TRUE)
+  
+  print("band9")
+  myloc1=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, c, "L30/Projected/9", sep="/")
+  setwd(myloc1)
+  band9_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+  #Getting 2016 band 3
+  myloc2=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, d, "L30/Projected/9", sep="/")
+  setwd(myloc2)
+  band9_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+  print(length(band9_2016))
+  print(length(band9_2015))
+  #Moving all files in the folloiwng list to
+  print(paste("stacking", c, d, "to get water year", sep=" "))
+  b32016 <- c(band9_2015[c(35:45)],band9_2016[c(1:34)])
+  #All of band 3 for 2016 is stacked! 
+  tststack <- raster::stack(b32016)
+  #Changes the names to day of year
+  names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
+  #Takes about 143 seconds
+  scaled_tstack <- calc(tststack, function(x){x*0.0001})
+  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015_2016_Input/Band_9.tif",sep="/")
+  writeRaster(scaled_tstack, out, overwrite=TRUE)
+  
+  print("band10")
+  myloc1=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, c, "L30/Projected/10", sep="/")
+  setwd(myloc1)
+  band9_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+  #Getting 2016 band 3
+  myloc2=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, d, "L30/Projected/10", sep="/")
+  setwd(myloc2)
+  band9_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+  print(length(band3_2016))
+  print(length(band3_2015))
+  #Moving all files in the folloiwng list to
+  print(paste("stacking", c, d, "to get water year", sep=" "))
+  b32016 <- c(band3_2015[c(35:45)],band3_2016[c(1:34)])
+  #All of band 3 for 2016 is stacked! 
+  tststack <- raster::stack(b32016)
+  #Changes the names to day of year
+  names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
+  #Takes about 143 seconds
+  scaled_tstack <- calc(tststack, function(x){x*0.0001})
+  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015_2016_Input/Band_10.tif",sep="/")
+  writeRaster(scaled_tstack, out, overwrite=TRUE)
+  
+  print("band11 (QA)")
+  myloc1=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, c, "L30/Projected/11", sep="/")
+  setwd(myloc1)
+  band3_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+  #Getting 2016 band 11
+  myloc2=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, d, "L30/Projected/11", sep="/")
+  setwd(myloc2)
+  band3_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
+  print(length(band3_2016))
+  print(length(band3_2015))
+  #Moving all files in the folloiwng list to
+  print(paste("stacking", c, d, "to get water year", sep=" "))
+  b32016 <- c(band3_2015[c(35:45)],band3_2016[c(1:34)])
+  #All of band 3 for 2016 is stacked! 
+  tststack <- raster::stack(b32016)
+  #Changes the names to day of year
+  names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
+  #Takes about 143 seconds
+  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015_2016_Input/Band_11.tif",sep="/")
+  writeRaster(tstack, out, overwrite=TRUE)
+  gc()
   return()
   }
   
+B1 <-Process_L30("16SDH", "2015")
+Process_L30("16SDH", "2016")
 write_bandstacks("16SDH", "2016", "2015")
-  #Getting 2015 band 4
-  setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2015/L30/Projected/4")
-  band4_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
-  #Getting 2016 band 4
-  setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2016/L30/Projected/4")
-  band4_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
-  #Moving all files in the folloiwng list to
-  b42016 <- c(band4_2015[c(35:45)],band4_2016[c(1:34)])
-  #All of band 4 for 2016 is stacked! 
-  tststack <- stack(b42016)
-  #Changes the names to day of year
-  names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
-  #Takes about 143 seconds
-  scaled_tstack <- calc(tststack, function(x){x*0.0001})
-  writeRaster(scaled_tstack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_4.tif")
-  
-  #Now for band 5....
-  #Getting 2015 band 5
-  setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2015/L30/Projected/5")
-  band5_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
-  #Getting 2016 band 5
-  setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2016/L30/Projected/5")
-  band5_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
-  #Moving all files in the folloiwng list to
-  b52016 <- c(band5_2015[c(35:45)],band5_2016[c(1:34)])
-  #All of band 5 for 2016 is stacked! 
-  tststack <- stack(b52016)
-  #Changes the names to day of year
-  names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
-  #Takes about 143 seconds
-  scaled_tstack <- calc(tststack, function(x){x*0.0001})
-  writeRaster(scaled_tstack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_5.tif")
-  
-  #Now for band 6....
-  #Getting 2015 band 6
-  setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2015/L30/Projected/6")
-  band6_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
-  #Getting 2016 band 6
-  setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2016/L30/Projected/6")
-  band6_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
-  #Moving all files in the folloiwng list to
-  b62016 <- c(band6_2015[c(35:45)],band6_2016[c(1:34)])
-  #All of band 6 for 2016 is stacked! 
-  tststack <- stack(b62016)
-  #Changes the names to day of year
-  names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
-  #Takes about 143 seconds
-  scaled_tstack <- calc(tststack, function(x){x*0.0001})
-  writeRaster(scaled_tstack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_6.tif")
-  
-  #Now for band 7....
-  #Getting 2015 band 7
-  setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2015/L30/Projected/7")
-  band7_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
-  #Getting 2016 band 7
-  setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2016/L30/Projected/7")
-  band7_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
-  #Moving all files in the folloiwng list to
-  b72016 <- c(band7_2015[c(35:45)],band7_2016[c(1:34)])
-  #All of band 7 for 2016 is stacked! 
-  tststack <- stack(b72016)
-  #Changes the names to day of year
-  names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
-  #Takes about 143 seconds
-  scaled_tstack <- calc(tststack, function(x){x*0.0001})
-  writeRaster(scaled_tstack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_7.tif")
-  
-  #Now band 9
-  setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2015/L30/Projected/9")
-  band9_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
-  #Getting 2016 band 9
-  setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2016/L30/Projected/9")
-  band9_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
-  #Moving all files in the folloiwng list to
-  b92016 <- c(band9_2015[c(35:45)],band9_2016[c(1:34)])
-  #All of band 3 for 2016 is stacked! 
-  tststack <- stack(b92016)
-  #Changes the names to day of year
-  names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
-  #Takes about 143 seconds
-  scaled_tstack <- calc(tststack, function(x){x*0.0001})
-  writeRaster(scaled_tstack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_9.tif")
-  
-  #Now band 10....
-  setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2015/L30/Projected/10")
-  band10_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
-  #Getting 2016 band 10
-  setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2016/L30/Projected/10")
-  band10_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
-  #Moving all files in the folloiwng list to
-  b102016 <- c(band10_2015[c(35:45)],band10_2016[c(1:34)])
-  #All of band 10 for 2016 is stacked! 
-  tststack <- stack(b102016)
-  #Changes the names to day of year
-  names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
-  #Takes about 143 seconds
-  scaled_tstack <- calc(tststack, function(x){x*0.0001})
-  writeRaster(scaled_tstack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_10.tif")
-  
-  #Getting 2016 band QA
-  setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2015/L30/Projected/11")
-  band11_2015 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
-  setwd("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/16SDH/2016/L30/Projected/11")
-  band11_2016 <- list.files(getwd(), pattern="tif$", full.names=TRUE)
-  #Moving all files in the folloiwng list to
-  b112016 <- c(band11_2015[c(35:45)],band11_2016[c(1:34)])
-  #All of band 3 for 2016 is stacked! 
-  tststack <- stack(b112016)
-  #Changes the names to day of year
-  names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
-  #Takes about 143 seconds
-  writeRaster(tststack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_11.tif")
-  
-  
-}
-Process_L30("16SDH", "2015")
 write_bandstacks("16SDH", "2016", "2015")
 
 
