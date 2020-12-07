@@ -49,6 +49,9 @@ projHDF2GTiff = function(loc, hdfs, gtiffs, lyr, fromSRS, toSRS){
   }
 }
 
+y <- "2015"
+x <- "16SDH"
+
 #x is tile, y is 'year'
 Process_L30 <- function(x,y){
   #pass x to the "my loc" variable
@@ -62,7 +65,6 @@ Process_L30 <- function(x,y){
   print("Band1 to Tiff")
   #Band 1
   projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 1, fromSRS = frm.srs, toSRS = to.srs)
-  return(B1)}
   #Band 2
   projHDF2GTiff(loc = myloc, hdfs = hdfs1, gtiffs = gtiffs1, lyr = 2, fromSRS = frm.srs, toSRS = to.srs)
   #Band 3
@@ -273,13 +275,25 @@ write_bandstacks <- function(x, d, c){
   return()
   }
   
-B1 <-Process_L30("16SDH", "2015")
-Process_L30("16SDH", "2016")
-write_bandstacks("16SDH", "2016", "2015")
-write_bandstacks("16SDH", "2016", "2015")
+Process_L30(x="16SDH", y="2015")
+Process_L30(x="16SDH", y="2016")
+write_bandstacks(x="16SDH", d="2016", c="2015")
 
+Process_L30(x="16SDH", y="2015")
+Process_L30(x="16SDH", y="2016")
+write_bandstacks(x="16SDH", d="2016", c="2015")
 
+Process_L30(x="16SDH", y="2015")
+Process_L30(x="16SDH", y="2016")
+write_bandstacks(x="16SDH", d="2016", c="2015")
 
+Process_L30(x="16SDH", y="2015")
+Process_L30(x="16SDH", y="2016")
+write_bandstacks(x="16SDH", d="2016", c="2015")
+
+Process_L30(x="16SDH", y="2015")
+Process_L30(x="16SDH", y="2016")
+write_bandstacks(x="16SDH", d="2016", c="2015")
 
 #All right, now for the calculations!!!
 B3stack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_3.tif")
@@ -569,62 +583,7 @@ White_Rf_input$county <- "White"
 All_counties_input <- do.call("rbind", list(Posey_Rf_input, Benton_Rf_input, Gibson_Rf_input, Warren_Rf_input, White_Rf_input))
 write.csv(All_counties_input, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RS_input_all.csv")
 
-#recode cover crop: 
-#All_counties_input <- read.csv("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RS_input_all.csv")
-All_counties_input <- read.csv("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/inputs_with_LST.csv")
-All_counties_input$Cover_Crop <- recode(All_counties_input$Cover_Crop, N="0", G="1", BC="1", C="1", B="1", W="1", L="1", P="1") 
-#set data aside for testing
-#All_input = subset(All_counties_input, select = -c(FID_,type, comment, N, S, W, E, ID, Field_No, Prev_Crp, Fall_Tilla, Residue, CC_Quality, CC_Method, BUFF_DIST, ORIG_FID))
-All_counties_input <- na.omit(All_counties_input)
-summary(All_counties_input)
-head(All_counties_input)
-#Bounding Box state of indiana
-#INext <- extent(c(-88.09776,	-84.784579,	37.771742,	41.760592))
-#This is a dumb way to do this but whatever
-#tst1 <- terra::expand(tst1, INext)
-#tst2 <- terra::expand(tst2, INext)
-#tst2 <- terra::resample(tst2, tst1)
-#tst3  <- raster::mosaic(stack(tst1), stack(tst2), fun=mean)
-#plot(tst3[[1]])
-#tst3 <- terra::expand(rast(tst3), INext)
-#names(tst3) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-#                "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")
-#plot(tst3[[1]])
-#terra::merge(inputs1,inputs2, tolerance=0.1)
-#origin(inputs1)
-#origin(inputs2)
-#plot(inputs1)
-#plot(inputs2)
-#str(Posey_Rf_input)
-#Posey_Rf_input$Cover_Crop <- as.factor(Posey_Rf_input$Cover_Crop)
-#summary(Posey_Rf_input)
-#recode cover crop: 
-#Posey_Rf_input$Cover_Crop <- recode(Posey_Rf_input$Cover_Crop, N="0", G="1", BC="1", C="1", B="1", W="1", L="1", P="1") 
-#set data aside for testing
-#Posey_input = subset(Al_input, select = -c(FID_,type, comment, N, S, W, E, ID, Field_No, Prev_Crp, Fall_Tilla, Residue, CC_Quality, CC_Method, BUFF_DIST, ORIG_FID))
-#Posey_input <- na.omit(Posey_input)
-#summary(Posey_input)
-#sample <-sample.split(Posey_input$Cover_Crop, SplitRatio = 0.85)
-#train=subset(Posey_input, sample==TRUE)
-#test=subset(Posey_input, sample==FALSE)
-#dim(train)
-#dim(test)
-#rf <- randomForest(Cover_Crop ~., data=train, strata=train, sampsize=c(20,20))
-#pred = predict(rf, newdata=test[-1])
-#cm = table(test[,1], pred)
-#cm
-#print(rf)
 
-#importance(rf)
-#varImpPlot(rf)
-#pred1=predict(rf,type = "prob")
-
-
-#kfold
-#train_control <- trainControl(method="cv", number=10)
-# Fit Naive Bayes Model
-#model <- train(Cover_Crop~., data=Posey_input, trControl=train_control, method="nb")
-# Summarise Results
 #print(model)
 
 
