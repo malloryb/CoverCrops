@@ -49,9 +49,6 @@ projHDF2GTiff = function(loc, hdfs, gtiffs, lyr, fromSRS, toSRS){
   }
 }
 
-y <- "2015"
-x <- "16SDH"
-
 #x is tile, y is 'year'
 Process_L30 <- function(x,y){
   #pass x to the "my loc" variable
@@ -116,7 +113,8 @@ write_bandstacks <- function(x, d, c){
   names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
   #Takes about 143 seconds
   scaled_tstack <- calc(tststack, function(x){x*0.0001})
-  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015_2016_Input/Band_3.tif",sep="/")
+  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana",x, "2015-2016wy/Band_3.tif",sep="/")
+  print(out)
   writeRaster(scaled_tstack, out, overwrite=TRUE)
   
   print("band4")
@@ -138,7 +136,7 @@ write_bandstacks <- function(x, d, c){
   names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
   #Takes about 143 seconds
   scaled_tstack <- calc(tststack, function(x){x*0.0001})
-  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015_2016_Input/Band_4.tif",sep="/")
+  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015-2016wy/Band_4.tif",sep="/")
   writeRaster(scaled_tstack, out, overwrite=TRUE)
   
   print("band5")
@@ -160,7 +158,7 @@ write_bandstacks <- function(x, d, c){
   names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
   #Takes about 143 seconds
   scaled_tstack <- calc(tststack, function(x){x*0.0001})
-  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015_2016_Input/Band_5.tif",sep="/")
+  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015-2016wy/Band_5.tif",sep="/")
   writeRaster(scaled_tstack, out, overwrite=TRUE)
   
   print("band6")
@@ -182,7 +180,7 @@ write_bandstacks <- function(x, d, c){
   names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
   #Takes about 143 seconds
   scaled_tstack <- calc(tststack, function(x){x*0.0001})
-  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015_2016_Input/Band_6.tif",sep="/")
+  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015-2016wy/Band_6.tif",sep="/")
   writeRaster(scaled_tstack, out, overwrite=TRUE)
   
   print("band7")
@@ -204,7 +202,7 @@ write_bandstacks <- function(x, d, c){
   names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
   #Takes about 143 seconds
   scaled_tstack <- calc(tststack, function(x){x*0.0001})
-  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015_2016_Input/Band_7.tif",sep="/")
+  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015-2016wy/Band_7.tif",sep="/")
   writeRaster(scaled_tstack, out, overwrite=TRUE)
   
   print("band9")
@@ -226,7 +224,7 @@ write_bandstacks <- function(x, d, c){
   names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
   #Takes about 143 seconds
   scaled_tstack <- calc(tststack, function(x){x*0.0001})
-  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015_2016_Input/Band_9.tif",sep="/")
+  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015-2016wy/Band_9.tif",sep="/")
   writeRaster(scaled_tstack, out, overwrite=TRUE)
   
   print("band10")
@@ -248,7 +246,7 @@ write_bandstacks <- function(x, d, c){
   names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
   #Takes about 143 seconds
   scaled_tstack <- calc(tststack, function(x){x*0.0001})
-  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015_2016_Input/Band_10.tif",sep="/")
+  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015-2016wy/Band_10.tif",sep="/")
   writeRaster(scaled_tstack, out, overwrite=TRUE)
   
   print("band11 (QA)")
@@ -269,31 +267,28 @@ write_bandstacks <- function(x, d, c){
   #Changes the names to day of year
   names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
   #Takes about 143 seconds
-  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015_2016_Input/Band_11.tif",sep="/")
+  out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015-2016wy/Band_11.tif",sep="/")
   writeRaster(tstack, out, overwrite=TRUE)
   gc()
   return()
   }
   
+list <- c("16SDH", "16SFH", "16SDJ", "16SEJ", "16SEH", "16SFJ", "16TFK", "16TEK", "16TDK", "16TDL", "16TEL", "16TFL")
 Process_L30(x="16SDH", y="2015")
 Process_L30(x="16SDH", y="2016")
 write_bandstacks(x="16SDH", d="2016", c="2015")
 
-Process_L30(x="16SDH", y="2015")
-Process_L30(x="16SDH", y="2016")
-write_bandstacks(x="16SDH", d="2016", c="2015")
+Process_L30(x="16SEH", y="2015")
+Process_L30(x="16SEH", y="2016")
+write_bandstacks(x="16SEH", d="2016", c="2015")
 
-Process_L30(x="16SDH", y="2015")
-Process_L30(x="16SDH", y="2016")
-write_bandstacks(x="16SDH", d="2016", c="2015")
+Process_L30(x="16TDK", y="2015")
+Process_L30(x="16TDK", y="2016")
+write_bandstacks(x="16TDK", d="2016", c="2015")
 
-Process_L30(x="16SDH", y="2015")
-Process_L30(x="16SDH", y="2016")
-write_bandstacks(x="16SDH", d="2016", c="2015")
-
-Process_L30(x="16SDH", y="2015")
-Process_L30(x="16SDH", y="2016")
-write_bandstacks(x="16SDH", d="2016", c="2015")
+Process_L30(x="16TEL", y="2015")
+Process_L30(x="16TEL", y="2016")
+write_bandstacks(x="16TEL", d="2016", c="2015")
 
 #All right, now for the calculations!!!
 B3stack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_3.tif")
