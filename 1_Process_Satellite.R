@@ -274,75 +274,42 @@ write_bandstacks <- function(x, d, c){
   gc()
   return()
   }
-  
-#list <- c("16SDH", "16SFH", "16SDJ", "16SEJ", "16SEH", "16SFJ", "16TFK", "16TEK", "16TDK", "16TDL", "16TEL", "16TFL")
-Process_L30(x="16SDH", y="2015")
-Process_L30(x="16SDH", y="2016")
-write_bandstacks(x="16SDH", d="2016", c="2015")
+masking <- function(x,y){
+  myloc1=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015-2016wy",  sep="/")
+  setwd(myloc1)
+  QAstack <- stack("/Band_11.tif")
+  #Create mask....
+  QAstack[QAstack<128] <- NA
+  print("mask created")
+  #This is probably not right but anything > 128 is ok I think
+  writeRaster(QAstack, "/QA_2015_2016.tif")
+  B3stack <- stack("/Band_3.tif")
+  B4stack <- stack("/Band_4.tif")
+  B5stack <- stack("/Band_5.tif")
+  B6stack <- stack("/Band_6.tif")
+  B7stack <- stack("/Band_7.tif")
+  B9stack <- stack("/Band_9.tif")
+  B10stack <- stack("/Band_10.tif")
+  print("masking raster stacks")
+  B4 <- mask(B4stack, QAstack)
+  B5 <- mask(B5stack, QAstack)
+  B6 <- mask(B6stack, QAstack)
+  B7 <- mask(B7stack, QAstack)
+  B3 <- mask(B3stack, QAstack)
+  B9 <- mask(B9stack, QAstack)
+  B10 <- mask(B10stack, QAstack)
+  print("writing masked rasters")
+  writeRaster(B4, "/Band_4_Masked.tif")
+  writeRaster(B5, "/Band_5_Masked.tif")
+  writeRaster(B6, "/Band_6_Masked.tif")
+  writeRaster(B7, "/Band_7_Masked.tif")
+  writeRaster(B3, "/Band_3_Masked.tif")
+  writeRaster(B9, "/Band_9_Masked.tif")
+  writeRaster(B10, "/Band_10_Masked.tif")
+  gc()
+  return("Done")
 
-Process_L30(x="16SEH", y="2015")
-Process_L30(x="16SEH", y="2016")
-write_bandstacks(x="16SEH", d="2016", c="2015")
-
-Process_L30(x="16TDK", y="2015")
-Process_L30(x="16TDK", y="2016")
-write_bandstacks(x="16TDK", d="2016", c="2015")
-
-Process_L30(x="16TEL", y="2015")
-Process_L30(x="16TEL", y="2016")
-write_bandstacks(x="16TEL", d="2016", c="2015")
-
-#All right, now for the calculations!!!
-B3stack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_3.tif")
-B4stack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_4.tif")
-B5stack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_5.tif")
-B6stack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_6.tif")
-B7stack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_7.tif")
-B9stack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_9.tif")
-B10stack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_10.tif")
-QAstack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_11.tif")
-
-#Now adding landast band 10 -> L30 band 9 
-plot(QAstack[[3]])
-plot(QAstack[[4]])
-plot(B5stack[[4]])
-plot(B4stack[[4]])
-
-#This is probably not right but anything > 128 is ok I think
-#Create mask....
-QAstack[QAstack<128] <- NA
-writeRaster(QAstack, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/QA_2015_2016.tif")
-QAstack <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/QAQA_2015_2016.tif")
-B4 <- mask(B4stack, QAstack)
-B5 <- mask(B5stack, QAstack)
-B6 <- mask(B6stack, QAstack)
-B7 <- mask(B7stack, QAstack)
-B3 <- mask(B3stack, QAstack)
-B9 <- mask(B9stack, QAstack)
-B10 <- mask(B10stack, QAstack)
-
-writeRaster(B4, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_4_Masked.tif")
-writeRaster(B5, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_5_Masked.tif")
-writeRaster(B6, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_6_Masked.tif")
-writeRaster(B7, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_7_Masked.tif")
-writeRaster(B3, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_3_Masked.tif")
-writeRaster(B9, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_9_Masked.tif")
-writeRaster(B10, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Band_10_Masked.tif")
-
-#get average of first 5 observations (Oct Nov)
-
-plot(NDVI, zlim=c(0,1))
-plot(STI)
-plot(SINDRI)
-plot(B3stack)
-plot(B4stack)
-plot(B5stack)
-plot(B6stack)
-plot(B7stack)
-plot(B9stack)
-plot(B10stack)
-
-
+}  
 #Function to perform bandmath Operations
 Bandmath <- function(tile){
   B3 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/",tile, "_Band_3_Masked.tif", sep=""), overwrite=TRUE)
@@ -400,6 +367,39 @@ Bandmath <- function(tile){
   print("done")
   
 }
+#list <- c("16SDH", "16SFH", "16SDJ", "16SEJ", "16SEH", "16SFJ", "16TFK", "16TEK", "16TDK", "16TDL", "16TEL", "16TFL")
+Process_L30(x="16SDH", y="2015")
+Process_L30(x="16SDH", y="2016")
+write_bandstacks(x="16SDH", d="2016", c="2015")
+
+Process_L30(x="16SEH", y="2015")
+Process_L30(x="16SEH", y="2016")
+write_bandstacks(x="16SEH", d="2016", c="2015")
+
+Process_L30(x="16TDK", y="2015")
+Process_L30(x="16TDK", y="2016")
+write_bandstacks(x="16TDK", d="2016", c="2015")
+
+Process_L30(x="16TEL", y="2015")
+Process_L30(x="16TEL", y="2016")
+write_bandstacks(x="16TEL", d="2016", c="2015")
+
+
+#get average of first 5 observations (Oct Nov)
+
+plot(NDVI, zlim=c(0,1))
+plot(STI)
+plot(SINDRI)
+plot(B3stack)
+plot(B4stack)
+plot(B5stack)
+plot(B6stack)
+plot(B7stack)
+plot(B9stack)
+plot(B10stack)
+
+
+
 
 rasterOptions(maxmemory = 1e+09, progress="text", overwrite=TRUE, chunksize=1e10)
 list <- c("16SDH", "16SFH", "16SDJ", "16SEJ", "16SEH", "16SFJ", "16TFK", "16TEK", "16TDK", "16TDL", "16TEL", "16TFL")
