@@ -53,6 +53,8 @@ projHDF2GTiff = function(loc, hdfs, gtiffs, lyr, fromSRS, toSRS){
 Process_L30 <- function(x,y){
   #pass x to the "my loc" variable
   myloc=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, y, "L30", sep="/")
+  print(myloc)
+  setwd(myloc)
   hdfs1 = list.files(getwd(), pattern="hdf$")
   gtiffs1 = gsub("hdf","tif",hdfs1) #
   frm.srs = "+proj=utm +zone=16 +ellps=WGS84 + datum=WGS84 + units=m + no_defs" # original HDF SRS
@@ -268,12 +270,12 @@ write_bandstacks <- function(x, d, c){
   names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
   #Takes about 143 seconds
   out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015-2016wy/Band_11.tif",sep="/")
-  writeRaster(tstack, out, overwrite=TRUE)
+  writeRaster(tststack, out, overwrite=TRUE)
   gc()
   return()
   }
   
-list <- c("16SDH", "16SFH", "16SDJ", "16SEJ", "16SEH", "16SFJ", "16TFK", "16TEK", "16TDK", "16TDL", "16TEL", "16TFL")
+#list <- c("16SDH", "16SFH", "16SDJ", "16SEJ", "16SEH", "16SFJ", "16TFK", "16TEK", "16TDK", "16TDL", "16TEL", "16TFL")
 Process_L30(x="16SDH", y="2015")
 Process_L30(x="16SDH", y="2016")
 write_bandstacks(x="16SDH", d="2016", c="2015")
