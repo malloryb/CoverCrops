@@ -319,13 +319,13 @@ masking <- function(x){
 }  
 #Function to perform bandmath Operations
 Bandmath <- function(tile){
-  B3 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/",tile, "_Band_3_Masked.tif", sep=""), overwrite=TRUE)
-  B4 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/", tile, "_Band_4_Masked.tif", sep=""), overwrite=TRUE)
-  B5 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/", tile, "_Band_5_Masked.tif", sep=""), overwrite=TRUE)
-  B6 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/", tile, "_Band_6_Masked.tif", sep=""), overwrite=TRUE)
-  B7 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/", tile, "_Band_7_Masked.tif", sep=""), overwrite=TRUE)
-  B9 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/", tile, "_Band_9_Masked.tif", sep=""), overwrite=TRUE)
-  B10 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/", tile, "_Band_10_Masked.tif", sep=""), overwrite=TRUE)
+  B3 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/",tile, "/2015-2016wy/", "Band_3_Masked.tif", sep=""), overwrite=TRUE)
+  B4 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/", tile, "/2015-2016wy/", "Band_4_Masked.tif", sep=""), overwrite=TRUE)
+  B5 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/", tile, "/2015-2016wy/", "Band_5_Masked.tif", sep=""), overwrite=TRUE)
+  B6 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/", tile,"/2015-2016wy/",  "Band_6_Masked.tif", sep=""), overwrite=TRUE)
+  B7 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/", tile,"/2015-2016wy/",  "Band_7_Masked.tif", sep=""), overwrite=TRUE)
+  B9 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/", tile, "/2015-2016wy/", "Band_9_Masked.tif", sep=""), overwrite=TRUE)
+  B10 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/", tile,"/2015-2016wy/",  "Band_10_Masked.tif", sep=""), overwrite=TRUE)
   NDVI <- ((B5 - B4)/(B5 + B4))
   writeRaster(NDVI, paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/",tile,"_NDVI.tif", sep=""), overwrite=TRUE)
   STI <- (B6/B7)
@@ -339,6 +339,7 @@ Bandmath <- function(tile){
   
   writeRaster(NDVI, paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/",tile, "_NDVI_scaled.tif", sep=""), overwrite=TRUE)
   print("Bandmath Calcs")
+  gc()
   #For the band medians - just get the median of the first 8 observations------#changing from 2-10 (NDVI lag)
   fun8 <- function(x){median(x, na.rm=TRUE)}
   B3_med <- app(B3[[2:10]], fun8)
@@ -348,14 +349,16 @@ Bandmath <- function(tile){
   B9_med <- app(B9[[2:10]], fun8)
   B10_med <- app(B10[[2:10]], fun8)
   NDVI_med <- app(NDVI[[2:10]], fun8)
+  print("all band medians finished")
   NDVI_mean <- app(NDVI[[2:10]], mean_na)
   NDVI_max <- app(NDVI[[2:10]], fun=function(x){max(x, na.rm=TRUE)})
   NDVI_min <- app(NDVI[[2:10]], fun=function(x){max(x, na.rm=TRUE)})
   NDVI_fullmax <- app(NDVI, fun=function(x){max(x, na.rm=TRUE)})
+  print("calculating ratios")
   B10_fullmax <-app(B10, fun=function(x){max(x, na.rm=TRUE)})
   NDVI_amp <- NDVI_fullmax-NDVI_max
   NDVI_ratio <- NDVI_med/NDVI_fullmax
-  therm_ratio <- (B10med/B10fullmax)
+  therm_ratio <- (B10_med/B10_fullmax)
   STI_med <- app(STI[[2:10]], fun8)
   SINDRI_med <- app(SINDRI[[2:10]], fun8)
   ### A much (> 100 times) faster approach is to directly use 
@@ -408,9 +411,10 @@ masking(x="16TEL")
 rasterOptions(maxmemory = 1e+09, progress="text", overwrite=TRUE, chunksize=1e10)
 list <- c("16SDH", "16SFH", "16SDJ", "16SEJ", "16SEH", "16SFJ", "16TFK", "16TEK", "16TDK", "16TDL", "16TEL", "16TFL")
 #lapply(list[8:12], Bandmath)
-Bandmath("16TDL")
+Bandmath("16SDH")
+Bandmath("16SEH")
+Bandmath("16TDK")
 Bandmath("16TEL")
-Bandmath("16TEK")
 
 #Format Windshield surveys by county----
 format_windshield1 <-function(county){
