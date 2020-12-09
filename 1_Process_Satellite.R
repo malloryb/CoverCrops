@@ -464,71 +464,33 @@ Gibson <- format_windshield3("Gibson")
 Warren <- format_windshield1("Warren")
 White <- format_windshield4("White")
 
-tomerge <- as.list(list.files(path="/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands", recursive = TRUE, pattern = "*input_stack", full.names = TRUE))
-str(tomerge)
-tomerge <- tomerge[-3]
+#Merge stuff - save for later
+#tomerge <- as.list(list.files(path="/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands", recursive = TRUE, pattern = "*input_stack", full.names = TRUE))
+#tomerge <- tomerge[-3]
+#e <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
+#indiana <- raster(e)
+#proj4string(indiana) <- CRS('+init=epsg:4269')
+#writeRaster(indiana, file="IndianaInput.tif", format="GTiff")
+#mosaic_rasters(gdalfile=tomerge, dst_dataset="IndianaInput.tif", of="GTiff", output.vrt=NULL, separate=TRUE, verbose=TRUE, output_Raster = TRUE, CHECK_DISK_FREE_SPACE=FALSE)
+#gdalinfo("IndianaInput.tif")
 
-e <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
-indiana <- raster(e)
-proj4string(indiana) <- CRS('+init=epsg:4269')
-writeRaster(indiana, file="IndianaInput.tif", format="GTiff")
-mosaic_rasters(gdalfile=tomerge, dst_dataset="IndianaInput.tif", of="GTiff", output.vrt=NULL, separate=TRUE, verbose=TRUE, output_Raster = TRUE, CHECK_DISK_FREE_SPACE=FALSE)
-gdalinfo("IndianaInput.tif")
-#This file is giant-------
-gc()
-In <-terra::rast("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/IndianaInput.tif", NAvalue="-Inf")
-#Mosaic didn't work quite like I thought it did. There's 169 layers here (13 x 13). So layers 1-13 are for 1 tile, 14-26 are for the second, etc. This means we're going to need to do some band math
-#By layer
-#In[In==-Inf] <- NA
-#Spit apply combine
-Set1 <- In[[1:13]]
-Set2 <- In[[14:26]]
-Set3 <- In[[27:39]]
-Set4 <- In[[40:52]]
-Set5 <- In[[53:65]]
-Set6 <- In[[65:78]]
-Set7 <- In[[79:91]]
-Set8 <- In[[92:104]]
-Set9 <- In[[105:117]]
-Set10 <- In[[118:130]]
-Set11 <- In[[131:143]]
-Set12 <- In[[144:156]]
-
-gc()
-clamp(Set1, -1, 100)
-Set1[Set1==-Inf] <- NA
-coSet3[Set3==-Inf] <- NA
-Set4[Set4==-Inf] <- NA
-Set5[Set5==-Inf] <- NA
-Set6[Set6==-Inf] <- NA
-Set7[Set7==-Inf] <- NA
-Set8[Set8==-Inf] <- NA
-Set9[Set9==-Inf] <- NA
-Set10[Set10==-Inf] <- NA
-Set11[Set11==-Inf] <- NA
-Set12[Set12==-Inf] <- NA
-
-Set1[Set1==Inf] <- NA
-function(x) {
-  mean(x,na.rm=T)
-}
-plot(In[[2]])
-min(In[[2]])
-
-t16SDH<- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16SDH_input_stack.tif")
+t16SDH<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16SDH _input_stack.tif")
 names(t16SDH) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")
+
 #16SCH<- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16SCDH_input_stack.tif")
 #16SDG <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16SDG_input_stack.tif")
-t16TDK<- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16TDK _input_stack.tif")
+t16TDK<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16TDK _input_stack.tif")
 names(t16TDK) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")
-t16TDL<- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16TDL _input_stack.tif")
-names(t16TDL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")
-t16TEL<- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16TEL_input_stack.tif")
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")
+
+#t16TDL<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16TDL _input_stack.tif")
+#names(t16TDL) <-c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                  "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")
+
+t16TEL<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16TEL _input_stack.tif")
 names(t16TEL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")
 
 Posey_Rf_input <- cbind(as.data.frame(Posey[[3]]), extract(t16SDH, (cbind(Posey[[1]] , Posey[[2]])), buffer=40, fun=median))
 Gibson_Rf_input <- cbind(as.data.frame(Gibson[[3]]), extract(t16SDH, (cbind(Gibson[[1]] , Gibson[[2]])), buffer=40, fun=median))
