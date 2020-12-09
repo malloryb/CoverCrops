@@ -274,41 +274,48 @@ write_bandstacks <- function(x, d, c){
   gc()
   return()
   }
-masking <- function(x,y){
+masking <- function(x){
   myloc1=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015-2016wy",  sep="/")
+  print(myloc1)
   setwd(myloc1)
-  QAstack <- stack("/Band_11.tif")
+  myloc2=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "QAstack.tif", sep="/")
+  QAstack <- raster::stack("Band_11.tif")
   #Create mask....
+  #This is probably not right but anything > 128 is ok I think
   QAstack[QAstack<128] <- NA
   print("mask created")
-  #This is probably not right but anything > 128 is ok I think
-  writeRaster(QAstack, "/QA_2015_2016.tif")
-  B3stack <- stack("/Band_3.tif")
-  B4stack <- stack("/Band_4.tif")
-  B5stack <- stack("/Band_5.tif")
-  B6stack <- stack("/Band_6.tif")
-  B7stack <- stack("/Band_7.tif")
-  B9stack <- stack("/Band_9.tif")
-  B10stack <- stack("/Band_10.tif")
-  print("masking raster stacks")
-  B4 <- mask(B4stack, QAstack)
-  B5 <- mask(B5stack, QAstack)
-  B6 <- mask(B6stack, QAstack)
-  B7 <- mask(B7stack, QAstack)
+  writeRaster(QAstack, myloc2, overwrite=TRUE)
+  B3stack <- raster::stack("Band_3.tif")
+  B4stack <- raster::stack("Band_4.tif")
+  B5stack <- raster::stack("Band_5.tif")
+  B6stack <- raster::stack("Band_6.tif")
+  B7stack <- raster::stack("Band_7.tif")
+  B9stack <- raster::stack("Band_9.tif")
+  B10stack <- raster::stack("Band_10.tif")
+  print("masking raster stacks and writing masked rasters")
   B3 <- mask(B3stack, QAstack)
+  writeRaster(B3, "Band_3_Masked.tif")
+  gc()
+  B4 <- mask(B4stack, QAstack)
+  writeRaster(B4, "Band_4_Masked.tif")
+  gc()
+  B5 <- mask(B5stack, QAstack)
+  writeRaster(B5, "Band_5_Masked.tif")
+  gc()
+  B6 <- mask(B6stack, QAstack)
+  writeRaster(B6, "Band_6_Masked.tif")
+  gc()
+  B7 <- mask(B7stack, QAstack)
+  writeRaster(B7, "Band_7_Masked.tif")
+  gc()
   B9 <- mask(B9stack, QAstack)
+  writeRaster(B9, "Band_9_Masked.tif")
+  gc()
   B10 <- mask(B10stack, QAstack)
-  print("writing masked rasters")
-  writeRaster(B4, "/Band_4_Masked.tif")
-  writeRaster(B5, "/Band_5_Masked.tif")
-  writeRaster(B6, "/Band_6_Masked.tif")
-  writeRaster(B7, "/Band_7_Masked.tif")
-  writeRaster(B3, "/Band_3_Masked.tif")
-  writeRaster(B9, "/Band_9_Masked.tif")
-  writeRaster(B10, "/Band_10_Masked.tif")
+  gc()
+  writeRaster(B10, "Band_10_Masked.tif")
   gc()
   return("Done")
-
 }  
 #Function to perform bandmath Operations
 Bandmath <- function(tile){
@@ -317,7 +324,8 @@ Bandmath <- function(tile){
   B5 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/", tile, "_Band_5_Masked.tif", sep=""), overwrite=TRUE)
   B6 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/", tile, "_Band_6_Masked.tif", sep=""), overwrite=TRUE)
   B7 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/", tile, "_Band_7_Masked.tif", sep=""), overwrite=TRUE)
-  
+  B9 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/", tile, "_Band_9_Masked.tif", sep=""), overwrite=TRUE)
+  B10 <- terra::rast(paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/", tile, "_Band_10_Masked.tif", sep=""), overwrite=TRUE)
   NDVI <- ((B5 - B4)/(B5 + B4))
   writeRaster(NDVI, paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/",tile,"_NDVI.tif", sep=""), overwrite=TRUE)
   STI <- (B6/B7)
@@ -336,13 +344,18 @@ Bandmath <- function(tile){
   B3_med <- app(B3[[2:10]], fun8)
   B5_med <- app(B5[[2:10]], fun8)
   B6_med <- app(B6[[2:10]], fun8)
+  B7_med <- app(B7[[2:10]], fun8)
+  B9_med <- app(B9[[2:10]], fun8)
+  B10_med <- app(B10[[2:10]], fun8)
   NDVI_med <- app(NDVI[[2:10]], fun8)
   NDVI_mean <- app(NDVI[[2:10]], mean_na)
   NDVI_max <- app(NDVI[[2:10]], fun=function(x){max(x, na.rm=TRUE)})
   NDVI_min <- app(NDVI[[2:10]], fun=function(x){max(x, na.rm=TRUE)})
   NDVI_fullmax <- app(NDVI, fun=function(x){max(x, na.rm=TRUE)})
+  B10_fullmax <-app(B10, fun=function(x){max(x, na.rm=TRUE)})
   NDVI_amp <- NDVI_fullmax-NDVI_max
   NDVI_ratio <- NDVI_med/NDVI_fullmax
+  therm_ratio <- (B10med/B10fullmax)
   STI_med <- app(STI[[2:10]], fun8)
   SINDRI_med <- app(SINDRI[[2:10]], fun8)
   ### A much (> 100 times) faster approach is to directly use 
@@ -357,11 +370,11 @@ Bandmath <- function(tile){
   GDD <-app(NDVI, which.max.na)
   
   
-  inputs <- c(B3_med, B5_med, B6_med, NDVI_med, NDVI_mean, NDVI_max, NDVI_min, NDVI_fullmax, NDVI_amp, NDVI_ratio, GDD, SINDRI_med, STI_med)
+  inputs <- c(B3_med, B5_med, B6_med, NDVI_med, NDVI_mean, NDVI_max, NDVI_min, NDVI_fullmax, NDVI_amp, NDVI_ratio, GDD, SINDRI_med, STI_med, B9_med, B10_med, therm_ratio, B10_fullmax)
   inputs
   print(str(inputs))
   names(inputs) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                     "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")
+                     "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")
   writeRaster(inputs, paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/",tile, "_input_stack.tif"), overwrite=TRUE)
   gc()  
   print("done")
@@ -384,20 +397,11 @@ Process_L30(x="16TEL", y="2015")
 Process_L30(x="16TEL", y="2016")
 write_bandstacks(x="16TEL", d="2016", c="2015")
 
-
-#get average of first 5 observations (Oct Nov)
-
-plot(NDVI, zlim=c(0,1))
-plot(STI)
-plot(SINDRI)
-plot(B3stack)
-plot(B4stack)
-plot(B5stack)
-plot(B6stack)
-plot(B7stack)
-plot(B9stack)
-plot(B10stack)
-
+#masking
+masking(x="16SDH")
+masking(x="16SEH")
+masking(x="16TDK")
+masking(x="16TEL")
 
 
 
