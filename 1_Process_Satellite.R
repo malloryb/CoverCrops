@@ -400,11 +400,16 @@ Process_L30(x="16TEL", y="2015")
 Process_L30(x="16TEL", y="2016")
 write_bandstacks(x="16TEL", d="2016", c="2015")
 
+Process_L30(x="16TDL", y="2015")
+Process_L30(x="16TDL", y="2016")
+write_bandstacks(x="16TDL", d="2016", c="2015")
+
 #masking
 masking(x="16SDH")
 masking(x="16SEH")
 masking(x="16TDK")
 masking(x="16TEL")
+masking(x="16TDL")
 
 
 
@@ -415,6 +420,7 @@ Bandmath("16SDH")
 Bandmath("16SEH")
 Bandmath("16TDK")
 Bandmath("16TEL")
+Bandmath("16TDL")
 
 #Format Windshield surveys by county----
 format_windshield1 <-function(county){
@@ -486,12 +492,15 @@ names(t16TDK) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_
 
 #t16TDL<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16TDL _input_stack.tif")
 #names(t16TDL) <-c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                  "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")
+                  #"NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")
 
 t16TEL<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16TEL _input_stack.tif")
 names(t16TEL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
                    "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")
 
+t16TDL<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16TDL _input_stack.tif")
+names(t16TDL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")
 Posey_Rf_input <- cbind(as.data.frame(Posey[[3]]), extract(t16SDH, (cbind(Posey[[1]] , Posey[[2]])), buffer=40, fun=median))
 Gibson_Rf_input <- cbind(as.data.frame(Gibson[[3]]), extract(t16SDH, (cbind(Gibson[[1]] , Gibson[[2]])), buffer=40, fun=median))
 
@@ -500,34 +509,26 @@ Warren_coords <- cbind(Warren[[1]], Warren[[2]])
 Warren_Rf_input <- cbind(as.data.frame(Warren[[3]]), extract(t16TDK, Warren_coords, buffer=40, fun=median))
 
 White_coords <- cbind(White[[1]], White[[2]])
-origin(t16TEL) <- 0
-origin(t16TDL) <- 0
-White_raster <- raster::mosaic(t16TEL, t16TDL, fun=median)
-t16TEL
-t16TDL
-plot(t16TEL)
-plot(t16TDL)
-t16TEL
-t16TDL
+
 #White_ext <- rbind(extract(t16TDL, White_coords, buffer=40, fun=median), extract(t16TEL, White_coords, buffer=40, fun=median))
 White_Rf_input <- cbind(as.data.frame(White[[3]]), extract(t16TEL, White_coords, buffer=10, fun=median))
 #Benton kinda messed up - hold for validation?
 Benton_Rf_input <- cbind(as.data.frame(Benton[[3]]), extract(t16TDK, (cbind(Benton[[1]] , Benton[[2]])), fun=median))
 head(Posey_Rf_input)
 Posey_Rf_input <- Posey_Rf_input[c("R_Lat", "R_Lon", "Prev_Crp", "Fall_Tilla", "Cover_Crop", "CC_Method", "B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")]
+                                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")]
 
 Posey_Rf_input$county <- "Posey"
 
 head(Benton_Rf_input)
 Benton_Rf_input <- Benton_Rf_input[c("R_lat", "R_lon", "Prev_Crp", "Fall_Tilla", "Cover_Crop", "CC_Method", "B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                                     "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")]
+                                     "NDVI_ratio", "GDD", "SINDRI_med", "STI_med","B9_med", "B10_med", "therm_ratio", "B10_fullmax")]
 Benton_Rf_input <- rename(Benton_Rf_input, R_Lat=R_lat, R_Lon=R_lon)
 Benton_Rf_input$county <- "Benton"
 
 head(Gibson_Rf_input)
 Gibson_Rf_input <- Gibson_Rf_input[c("R_lat", "R_lon", "Prev_Crp", "Fall_Tilla", "Cover_Crop", "CC_Method", "B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                                     "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")]
+                                     "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")]
 
 Gibson_Rf_input <- rename(Gibson_Rf_input, R_Lat=R_lat, R_Lon=R_lon)
 
@@ -535,7 +536,7 @@ Gibson_Rf_input$county <- "Gibson"
 
 head(Warren_Rf_input)
 Warren_Rf_input <- Warren_Rf_input[c("R_Lat", "R_Lon", "Prev_Crp", "Fall_Tilla", "Cover_Crop", "CC_Method", "B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                                     "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")]
+                                     "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")]
 
 Warren_Rf_input$county <- "Warren"
 
@@ -543,12 +544,12 @@ Warren_Rf_input$county <- "Warren"
 
 head(White_Rf_input)
 White_Rf_input <- White_Rf_input[c("R_Lat", "R_Lon", "Prev_Crp", "Fall_Tilla", "Cover_Crop", "CC_Method", "B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med")]
+                                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")]
 White_Rf_input$county <- "White"
 #rename(White_Rf_input, R_Lat=R_lat, R_Lon=R_lon)
 
 All_counties_input <- do.call("rbind", list(Posey_Rf_input, Benton_Rf_input, Gibson_Rf_input, Warren_Rf_input, White_Rf_input))
-write.csv(All_counties_input, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RS_input_all.csv")
+write.csv(All_counties_input, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RS_input_all_12_8.csv")
 
 
 #print(model)
