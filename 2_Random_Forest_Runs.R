@@ -1,11 +1,6 @@
 #"Clean" Start to random forest model runs
-library(raster)
-library(randomForest)
-library(caret)
-library(dplyr)
-library(caTools)
-#raster files
-#Now need to add ARD LST dataset:
+pacman::p_load(raster, gdalUtils, terra, dplyr, rgdal, sp, rhdf5, rlist, randomForest, caTools, caret, maptools)
+
 mean_na_x <- function(x) {
   e <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
   r2 <- raster(e)
@@ -21,51 +16,28 @@ mean_na_x <- function(x) {
 }
 
 #First load all the stacks 
-#LSTlist <- list.files(path="/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", recursive = FALSE, pattern = "*.tif", full.names = TRUE)
-#Then get the mean of the oct/nov observations
-#liststack <- lapply(LSTlist, FUN=stack)
-#Then mosaic all togteher
-#LSTmerged <- do.call(merge, lapply(liststack, mean_na_x))
-#writeRaster(LSTmerged, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Input_LST.tif")
-
-LSTmerged <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Input_LST.tif")
-plot(LSTmerged)
-print(LSTmerged)
-t16SDH<- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16SDH_input_stack.tif")
-w <- crop(LSTmerged, t16SDH)
-w <- resample(w, t16SDH)
-t16SDH <- stack(t16SDH, w)
+t16SDH<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16SDH _input_stack.tif")
 names(t16SDH) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "LST_unscaled")
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")
 
+t16SEH<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16SEH _input_stack.tif")
+names(t16SEH) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")
 
-#16SCH<- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16SCDH_input_stack.tif")
-#16SDG <- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16SDG_input_stack.tif")
-t16TDK<- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16TDK _input_stack.tif")
-t <- crop(LSTmerged, t16TDK)
-t <- resample(t, t16TDK)
-t16TDK <- stack(t16TDK, t)
+t16TDK<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16TDK _input_stack.tif")
 names(t16TDK) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "LST_unscaled")
-
-t16TDL<- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16TDL _input_stack.tif")
-y <- crop(LSTmerged, t16TDL)
-y <- resample(y, t16TDL)
-t16TDL <- stack(t16TDL, y)
-names(t16TDL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "LST_unscaled")
-
-t16TEL<- stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/16TEL_input_stack.tif")
-z <- crop(LSTmerged, t16TEL)
-z <- resample(z, t16TEL)
-t16TEL <- stack(t16TEL, z)
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")
+t16TEL<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16TEL _input_stack.tif")
 names(t16TEL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "LST_unscaled")
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")
+
+t16TDL<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16TDL _input_stack.tif")
+names(t16TDL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax")
 
 #input data csv------
 gc()
-#All_counties_input <- read.csv("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RS_input_all.csv")
-All_counties_input <- read.csv("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/inputs_with_LST_unscaled.csv")
+All_counties_input <- read.csv("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RS_input_all_12_8.csv")
 All_counties_input$Cover_Crop <- as.factor(All_counties_input$Cover_Crop)
 levels(All_counties_input$Cover_Crop)
 plyr::count(All_counties_input$Cover_Crop)
