@@ -509,9 +509,9 @@ Warren_coords <- cbind(Warren[[1]], Warren[[2]])
 Warren_Rf_input <- cbind(as.data.frame(Warren[[3]]), extract(t16TDK, Warren_coords, buffer=40, fun=median))
 
 White_coords <- cbind(White[[1]], White[[2]])
-
+White[[3]]
 #White_ext <- rbind(extract(t16TDL, White_coords, buffer=40, fun=median), extract(t16TEL, White_coords, buffer=40, fun=median))
-White_Rf_input <- cbind(as.data.frame(White[[3]]), extract(t16TEL, White_coords, buffer=10, fun=median))
+White_Rf_input <- cbind(as.data.frame(White[[3]]), extract(t16TEL, White_coords, fun=median))
 #Benton kinda messed up - hold for validation?
 Benton_Rf_input <- cbind(as.data.frame(Benton[[3]]), extract(t16TDK, (cbind(Benton[[1]] , Benton[[2]])), fun=median))
 head(Posey_Rf_input)
@@ -552,6 +552,5 @@ All_counties_input <- do.call("rbind", list(Posey_Rf_input, Benton_Rf_input, Gib
 write.csv(All_counties_input, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RS_input_all_12_8.csv")
 
 
-#print(model)
 
 
