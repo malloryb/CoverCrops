@@ -1,5 +1,5 @@
 #"Clean" Start to random forest model runs
-pacman::p_load(raster, gdalUtils, terra, dplyr, rgdal, sp, rhdf5, rlist, randomForest, caTools, caret, maptools)
+pacman::p_load(raster, gdalUtils, terra, dplyr, rgdal, sp, rhdf5, rlist, randomForest, caTools, caret, maptools, e1071)
 
 mean_na_x <- function(x) {
   e <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
@@ -51,6 +51,7 @@ plyr::count(All_counties_input$CC_Method)
 #Two class model-------
 #Cover Crop Presence Absence Category: 0 = no cover crop,  2 = "Cover Crop" 
 #Cover Crop Specific Category: 0 = nothing (presumably conventional tillage), 1= 'No-Till', 2 = "Cover crop".  
+
 All_counties_input$Cover_Crop_Specific <- "0"
 All_counties_input$Cover_Crop_Specific[All_counties_input$Fall_Tilla == "N" | All_counties_input$Fall_Tilla == "n"] <- "1"
 All_counties_input$Cover_Crop_Specific[All_counties_input$Cover_Crop != "N"] <- "2"
@@ -62,10 +63,12 @@ All_counties_input$Cover_Crop_PA <- "0"
 All_counties_input$Cover_Crop_PA[All_counties_input$Cover_Crop == "A" | All_counties_input$Cover_Crop=="B" | All_counties_input$Cover_Crop=="BC"| All_counties_input$Cover_Crop=="C"| All_counties_input$Cover_Crop=="W" | All_counties_input$Cover_Crop=="G"] <- "2"
 All_counties_input$Cover_Crop_PA <- as.factor(All_counties_input$Cover_Crop_PA)
 head(All_counties_input)
-All_counties_input <- subset(All_counties_input, select=-c(s023010_fall))
+#All_counties_input <- subset(All_counties_input, select=-c(B9_med))
 plyr::count(All_counties_input$Cover_Crop_PA)
 plyr::count(All_counties_input$Cover_Crop_Specific)
+All_counties_input[sapply(All_counties_input, is.infinite)] <- NA
 All_counties_input <- na.omit(All_counties_input)
+
 #random forest model develop
 #Gonna try github method from here: https://gist.github.com/hakimabdi/720f1481af9eca0b7b97d9856052e0e2
 # Split the data frame into 70-30 by class
@@ -90,13 +93,14 @@ rf.grid <- expand.grid(mtry=1:10) # number of variables available for splitting 
 ## Begin training the models. It took my laptop 8 minutes to train all three algorithms
 # Train the random forest model
 head(trn)
-rf_modelLST <- caret::train(x = trn[,(9:22)], y = as.factor(trn$Cover_Crop_PA),
+
+rf_modelLST <- caret::train(x = trn[,(8:24)], y = as.factor(trn$Cover_Crop_PA),
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-rf_modelSWIR <- caret::train(x = trn[,(9:21)], y = as.factor(trn$Cover_Crop_PA),
+rf_modelSWIR <- caret::train(x = trn[,(8:20)], y = as.factor(trn$Cover_Crop_PA),
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-rf_modelVISNir <- caret::train(x = trn[,(9:19)], y = as.factor(trn$Cover_Crop_PA),
+rf_modelVISNir <- caret::train(x = trn[,(8:18)], y = as.factor(trn$Cover_Crop_PA),
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-rf_modelNDVI <- caret::train(x = trn[12], y = as.factor(trn$Cover_Crop_PA),
+rf_modelNDVI <- caret::train(x = trn[17], y = as.factor(trn$Cover_Crop_PA),
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 
 rf_modelLST
@@ -104,28 +108,25 @@ rf_modelSWIR
 rf_modelVISNir
 rf_modelNDVI
 
-rf_model
 varImp(rf_modelNDVI)
 varImp(rf_modelVISNir)
 varImp(rf_modelSWIR)
 varImp(rf_modelLST)
 
-varImpPlot(rf_model)
-
-save(rf_model,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA.RData")
+#save(rf_model,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA.RData")
 #random forest model evalaute
 ## Apply the models to data. It took my imac 16 minutes to apply the random forest model
 # Apply the random forest model to the HLS data-----
 gc()
-rf_prediction1 = raster::predict(t16SDH, model=rf_model)
-rf_prediction2= raster::predict(t16TDK, model=rf_model)
-rf_prediction3 = raster::predict(t16TDL, model=rf_model)
-rf_prediction4 = raster::predict(t16TEL, model=rf_model)
+rf_prediction1 = raster::predict(t16SDH, model=rf_modelLST)
+rf_prediction2= raster::predict(t16TDK, model=rf_modelLST)
+rf_prediction3 = raster::predict(t16TDL, model=rf_modelLST)
+rf_prediction4 = raster::predict(t16TEL, model=rf_modelLST)
 
-plot(rf_prediction1)
-plot(rf_prediction2)
-plot(rf_prediction3)
-plot(rf_prediction4)
+#plot(rf_prediction1)
+#plot(rf_prediction2)
+#plot(rf_prediction3)
+#plot(rf_prediction4)
 
 #rf_prediction_prob = raster::predict(t16SDH, model=rf_model, type="prob")
 
@@ -139,15 +140,15 @@ e <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
 r2 <- raster(e)
 res(r2) <- c(0.00356, 0.00266)
 crs(r2) <- "+proj=longlat +datum=WGS84 +no_defs"
-f <- extend(rf_prediction1, e)
-f <- resample(f, r2)
-d <- extend(rf_prediction2, e)
-d <- resample(d,r2)
-c <- extend(rf_prediction3, e)
-c <- resample(c,r2)
-b <- extend(rf_prediction4, e)
-b <- resample(b,r2)
-plot(calc(stack(f,d,c,b), mean_na))
+#f <- extend(rf_prediction1, e)
+#f <- resample(f, r2)
+#d <- extend(rf_prediction2, e)
+#d <- resample(d,r2)
+#c <- extend(rf_prediction3, e)
+#c <- resample(c,r2)
+#b <- extend(rf_prediction4, e)
+#b <- resample(b,r2)
+#plot(calc(stack(f,d,c,b), mean_na))
 
 length(rf_Eval3)
 length(eva$Cover_Crop_PA)
