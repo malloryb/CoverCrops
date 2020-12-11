@@ -98,7 +98,7 @@ plyr::count(All_counties_input$Cover_Crop_Specific)
 # Split the data frame into 70-30 by class
 #First grouping------
 # Create model weights (they sum to one)
-set.seed(9560)
+set.seed(900)
 str(All_counties_input)
 All_counties_input <- upSample(All_counties_input, All_counties_input$Cover_Crop_PA)
 sample <-sample.split(All_counties_input$Cover_Crop_PA, SplitRatio = 0.8)
@@ -239,22 +239,6 @@ rf2_prediction1 = raster::predict(t16SDH, model=rf_model2)
 rf2_prediction2= raster::predict(t16TDK, model=rf_model2)
 rf2_prediction3 = raster::predict(t16TDL, model=rf_model2)
 rf2_prediction4 = raster::predict(t16TEL, model=rf_model2)
-
-e <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
-r2 <- raster(e)
-res(r2) <- c(0.00356, 0.00266)
-crs(r2) <- "+proj=longlat +datum=WGS84 +no_defs"
-x <- extend(rf2_prediction1, e)
-x <- resample(x, r2)
-y <- extend(rf2_prediction2, e)
-y <- resample(y,r2)
-z <- extend(rf2_prediction3, e)
-z <- resample(z,r2)
-a <- extend(rf2_prediction4, e)
-a <- resample(a,r2)
-
-tst <- stack(x,y,z,a)
-plot(calc(tst,mean_na))
 
 #rf_prediction_prob = raster::predict(t16SDH, model=rf_model, type="prob")
 
