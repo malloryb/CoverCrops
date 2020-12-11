@@ -224,6 +224,7 @@ write_bandstacks <- function(x, d, c){
   tststack <- raster::stack(b32016)
   #Changes the names to day of year
   names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
+  tststack[tststack==-1000] <-NA
   #Takes about 143 seconds
   scaled_tstack <- calc(tststack, function(x){x*0.0001})
   out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015-2016wy/Band_9.tif",sep="/")
@@ -247,7 +248,7 @@ write_bandstacks <- function(x, d, c){
   #Changes the names to day of year
   names(tststack) <- paste("doy",substr(names(tststack), 20,22), sep="_")
   #Takes about 143 seconds
-  scaled_tstack <- calc(tststack, function(x){x*0.0001})
+  scaled_tstack <- calc(tststack, function(x){x*0.001})
   out=paste("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", x, "2015-2016wy/Band_10.tif",sep="/")
   writeRaster(scaled_tstack, out, overwrite=TRUE)
   
@@ -404,12 +405,39 @@ Process_L30(x="16TDL", y="2015")
 Process_L30(x="16TDL", y="2016")
 write_bandstacks(x="16TDL", d="2016", c="2015")
 
+
+Process_L30(x="16SFH", y="2015")
+Process_L30(x="16SFH", y="2016")
+write_bandstacks(x="16SFH", d="2016", c="2015")
+
+Process_L30(x="16SEJ", y="2015")
+Process_L30(x="16SEJ", y="2016")
+write_bandstacks(x="16SEJ", d="2016", c="2015")
+
+Process_L30(x="16SFJ", y="2015")
+Process_L30(x="16SFJ", y="2016")
+write_bandstacks(x="16SFJ", d="2016", c="2015")
+
+Process_L30(x="16TEK", y="2015")
+Process_L30(x="16TEK", y="2016")
+write_bandstacks(x="16TEK", d="2016", c="2015")
+
+Process_L30(x="16TFL", y="2015")
+Process_L30(x="16TFL", y="2016")
+write_bandstacks(x="16TFL", d="2016", c="2015") 
+
 #masking
 masking(x="16SDH")
 masking(x="16SEH")
 masking(x="16TDK")
 masking(x="16TEL")
 masking(x="16TDL")
+
+masking(x="16SFH")
+masking(x="16SEJ")
+masking(x="16SFJ")
+masking(x="16TEK")
+masking(x="16TFL")
 
 
 
@@ -421,6 +449,12 @@ Bandmath("16SEH")
 Bandmath("16TDK")
 Bandmath("16TEL")
 Bandmath("16TDL")
+
+Bandmath("16SFH")
+Bandmath("16SEJ")
+Bandmath("16SFJ")
+Bandmath("16TEK")
+Bandmath("16TFL")
 
 #Format Windshield surveys by county----
 format_windshield1 <-function(county){
@@ -549,8 +583,18 @@ White_Rf_input$county <- "White"
 #rename(White_Rf_input, R_Lat=R_lat, R_Lon=R_lon)
 
 All_counties_input <- do.call("rbind", list(Posey_Rf_input, Benton_Rf_input, Gibson_Rf_input, Warren_Rf_input, White_Rf_input))
-write.csv(All_counties_input, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RS_input_all_12_8.csv")
+#write.csv(All_counties_input, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RS_input_all_12_8.csv")
 
+All_counties_input <- read.csv("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RS_input_all_12_8.csv")
 
+All_counties_input2 <- read.csv("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/inputs_with_LST_unscaled.csv")
 
-
+head(All_counties_input2)
+All_counties_input2 <- subset(All_counties_input2, select = -s023010_fall)
+head(All_counties_input2)
+str(All_counties_input2)
+str(All_counties_input)
+All_counties_input$LST <- All_counties_input2$LST_unscaled
+All_counties_input <- All_counties_input %>% relocate(LST, .before = county)
+head(All_counties_input)
+write.csv(All_counties_input, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/input_all_12_11.csv")
