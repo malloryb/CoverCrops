@@ -41,10 +41,6 @@ All_counties_input <- read.csv("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_
 #For today: 12/11, we're also going to add the proper LST data from the Greek online LST calculator
 #Double Check 1 and 2 are the lat longs
 head(All_counties_input)
-All_counties_input[[1]]
-#LST_vals <- extract(LST, (cbind(All_counties_input$R_Lon , All_counties_input$R_Lat)))
-#LST_vals[LST_vals == 0] <- NA
-All_counties_input$LST <- LST_vals
 All_counties_input$Cover_Crop <- as.factor(All_counties_input$Cover_Crop)
 levels(All_counties_input$Cover_Crop)
 plyr::count(All_counties_input$Cover_Crop)
@@ -59,55 +55,60 @@ plyr::count(All_counties_input$CC_Method)
 #Cover Crop Presence Absence Category: 0 = no cover crop,  2 = "Cover Crop" 
 #Cover Crop Specific Category: 0 = nothing (presumably conventional tillage), 1= 'No-Till', 2 = "Cover crop".  
 
-All_counties_input$Cover_Crop_Specific <- "0"
-All_counties_input$Cover_Crop_Specific[All_counties_input$Fall_Tilla == "N" | All_counties_input$Fall_Tilla == "n"] <- "1"
-All_counties_input$Cover_Crop_Specific[All_counties_input$Cover_Crop != "N"] <- "2"
+All_counties_input$Cover_Crop_Specific <- "Class0"
+All_counties_input$Cover_Crop_Specific[All_counties_input$Fall_Tilla == "N" | All_counties_input$Fall_Tilla == "n"] <- "ClassT"
+All_counties_input$Cover_Crop_Specific[All_counties_input$Cover_Crop != "N"] <- "ClassC"
 All_counties_input$Cover_Crop_Specific <- as.factor(All_counties_input$Cover_Crop_Specific)
 levels(as.factor(All_counties_input$Cover_Crop_Specific))
 
 #recode cover crop: 
-All_counties_input$Cover_Crop_PA <- "0"
-All_counties_input$Cover_Crop_PA[All_counties_input$Cover_Crop == "A" | All_counties_input$Cover_Crop=="B" | All_counties_input$Cover_Crop=="BC"| All_counties_input$Cover_Crop=="C"| All_counties_input$Cover_Crop=="W" | All_counties_input$Cover_Crop=="G"] <- "2"
+All_counties_input$Cover_Crop_PA <- "Class0"
+All_counties_input$Cover_Crop_PA[All_counties_input$Cover_Crop == "A" | All_counties_input$Cover_Crop=="B" | All_counties_input$Cover_Crop=="BC"| All_counties_input$Cover_Crop=="C"| All_counties_input$Cover_Crop=="W" | All_counties_input$Cover_Crop=="G"] <- "ClassC"
 All_counties_input$Cover_Crop_PA <- as.factor(All_counties_input$Cover_Crop_PA)
 head(All_counties_input)
 #All_counties_input <- subset(All_counties_input, select=-c(B9_med))
-plyr::count(All_counties_input$Cover_Crop_PA)
-plyr::count(All_counties_input$Cover_Crop_Specific)
 All_counties_input[sapply(All_counties_input, is.infinite)] <- NA
 All_counties_input <- na.omit(All_counties_input)
+plyr::count(All_counties_input$Cover_Crop_PA)
+plyr::count(All_counties_input$Cover_Crop_Specific)
+
 
 #random forest model develop
 #Gonna try github method from here: https://gist.github.com/hakimabdi/720f1481af9eca0b7b97d9856052e0e2
 # Split the data frame into 70-30 by class
 #First grouping------
-levels(All_counties_input$Cover_Crop_PA)
+# Create model weights (they sum to one)
+set.seed(9560)
+str(All_counties_input)
+All_counties_input <- upSample(All_counties_input, All_counties_input$Cover_Crop_PA)
 sample <-sample.split(All_counties_input$Cover_Crop_PA, SplitRatio = 0.8)
 trn=subset(All_counties_input, sample==TRUE)
 eva=subset(All_counties_input, sample==FALSE)
 eva.sp = SpatialPointsDataFrame(coords = cbind(eva$R_Lon, eva$R_Lat), data = eva, proj4string = crs("+proj=longlat +datum=WGS84 +no_defs"))
 # Set up a resampling method in the model training process
-tc <- trainControl(method = "repeatedcv", # repeated cross-validation of the training data
-                   number = 10, # number of folds
-                   repeats = 5, # number of repeats
+tc <- trainControl(method = "rf", # repeated cross-validation of the training data
+                   preProcess= c("scale", "center"),
+                  number = 10, # number of folds
+                   repeats = 10, # number of repeats
                    allowParallel = FALSE, # allow use of multiple cores if specified in training
                    verboseIter = TRUE) # view the training iterations
 
 # Generate a grid search of candidate hyper-parameter values for inclusion into the models training
 # These hyper-parameter values are examples. You will need a more complex tuning process to achieve high accuracies
 # For example, you can play around with the parameters to see which combinations gives you the highest accuracy. 
-rf.grid <- expand.grid(mtry=1:10) # number of variables available for splitting at each tree node
+rf.grid <- expand.grid(mtry=1:19) # number of variables available for splitting at each tree node
 
 ## Begin training the models. It took my laptop 8 minutes to train all three algorithms
 # Train the random forest model
 head(trn)
 #THIS IS WHERE WE CHANGE ROWS 
-rf_modelLST <- caret::train(x = trn[,(8:25)], y = as.factor(trn$Cover_Crop_PA),
+rf_modelLST <- caret::train(x = trn[,(9:26)], y = as.factor(trn$Cover_Crop_PA),
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-rf_modelSWIR <- caret::train(x = trn[,(8:20)], y = as.factor(trn$Cover_Crop_PA),
+rf_modelSWIR <- caret::train(x = trn[,(9:21)], y = as.factor(trn$Cover_Crop_PA),
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-rf_modelVISNir <- caret::train(x = trn[,(8:18)], y = as.factor(trn$Cover_Crop_PA),
+rf_modelVISNir <- caret::train(x = trn[,(9:19)], y = as.factor(trn$Cover_Crop_PA),
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-rf_modelNDVI <- caret::train(x = trn[17], y = as.factor(trn$Cover_Crop_PA),
+rf_modelNDVI <- caret::train(x = trn[12], y = as.factor(trn$Cover_Crop_PA),
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 
 rf_modelLST
