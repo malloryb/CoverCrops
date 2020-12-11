@@ -37,7 +37,14 @@ names(t16TDL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_
 
 #input data csv------
 gc()
-All_counties_input <- read.csv("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RS_input_all_12_8.csv")
+All_counties_input <- read.csv("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/input_all_12_11.csv")
+#For today: 12/11, we're also going to add the proper LST data from the Greek online LST calculator
+#Double Check 1 and 2 are the lat longs
+head(All_counties_input)
+All_counties_input[[1]]
+#LST_vals <- extract(LST, (cbind(All_counties_input$R_Lon , All_counties_input$R_Lat)))
+#LST_vals[LST_vals == 0] <- NA
+All_counties_input$LST <- LST_vals
 All_counties_input$Cover_Crop <- as.factor(All_counties_input$Cover_Crop)
 levels(All_counties_input$Cover_Crop)
 plyr::count(All_counties_input$Cover_Crop)
@@ -93,8 +100,8 @@ rf.grid <- expand.grid(mtry=1:10) # number of variables available for splitting 
 ## Begin training the models. It took my laptop 8 minutes to train all three algorithms
 # Train the random forest model
 head(trn)
-
-rf_modelLST <- caret::train(x = trn[,(8:24)], y = as.factor(trn$Cover_Crop_PA),
+#THIS IS WHERE WE CHANGE ROWS 
+rf_modelLST <- caret::train(x = trn[,(8:25)], y = as.factor(trn$Cover_Crop_PA),
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 rf_modelSWIR <- caret::train(x = trn[,(8:20)], y = as.factor(trn$Cover_Crop_PA),
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
@@ -182,26 +189,26 @@ rf.grid <- expand.grid(mtry=1:10) # number of variables available for splitting 
 
 ## Begin training the models. It took my laptop 8 minutes to train all three algorithms
 # Train the random forest model
-rf_model2 <- caret::train(x = trn[,(9:22)], y = as.factor(trn$Cover_Crop_Specific),
-                         method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
+#rf_model2 <- caret::train(x = trn[,(9:22)], y = as.factor(trn$Cover_Crop_Specific),
+#                         method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 
-rf_modelLST <- caret::train(x = trn[,(9:22)], y = as.factor(trn$Cover_Crop_Specific),
+rf_modelLST2 <- caret::train(x = trn[,(8:25)], y = as.factor(trn$Cover_Crop_Specific),
                             method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-rf_modelSWIR <- caret::train(x = trn[,(9:21)], y = as.factor(trn$Cover_Crop_Specific),
+rf_modelSWIR2 <- caret::train(x = trn[,(8:20)], y = as.factor(trn$Cover_Crop_Specific),
                              method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-rf_modelVISNir <- caret::train(x = trn[,(9:19)], y = as.factor(trn$Cover_Crop_Specific),
+rf_modelVISNir2 <- caret::train(x = trn[,(8:18)], y = as.factor(trn$Cover_Crop_Specific),
                                method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-rf_modelNDVI <- caret::train(x = trn[12], y = as.factor(trn$Cover_Crop_Specific),
+rf_modelNDVI2 <- caret::train(x = trn[17], y = as.factor(trn$Cover_Crop_Specific),
                              method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 
-rf_modelLST
-rf_modelSWIR
-rf_modelNDVI
-rf_modelVISNir
+rf_modelLST2
+rf_modelSWIR2
+rf_modelNDVI2
+rf_modelVISNir2
 
 
 rf_model2
-varImp(rf_model2)
+varImp(rf_modelLST)
 save(rf_model2,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_Cat.RData")
 
 #random forest model evalaute
