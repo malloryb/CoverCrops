@@ -18,42 +18,39 @@ mean_na_x <- function(x) {
 #First load all the stacks 
 LSTmerged <- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Input_LST.tif")
 t16SDH<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16SDH _input_stack.tif")
-w <- crop(LSTmerged, t16SDH)
-w <- resample(w, t16SDH)
-t16SDH <- raster::stack(t16SDH,w)
+w <- raster::crop(LSTmerged, t16SDH)
+w <- raster::resample(w, t16SDH)
+t16SDH <- raster::addLayer(t16SDH,w)
 names(t16SDH) <-  c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                    "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST_unscaled")
-
-names(t16SDH) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST_unscaled")
+                    "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST")
 
 t16SEH<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16SEH _input_stack.tif")
 x <- crop(LSTmerged, t16SEH)
 x <- resample(x, t16SEH)
-t16SEH <- raster::stack(t16SEH, x)
+t16SEH <- raster::addLayer(t16SEH, x)
 names(t16SEH) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST_unscaled")
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST")
 
 t16TDK<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16TDK _input_stack.tif")
 y <- crop(LSTmerged, t16TDK)
 y <- resample(y, t16TDK)
-t16TDK <- raster::stack(t16TDK, y)
+t16TDK <- raster::addLayer(t16TDK, y)
 names(t16TDK) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST_unscaled")
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST")
 
 t16TEL<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16TEL _input_stack.tif")
 z <- crop(LSTmerged, t16TEL)
 z <- resample(z, t16TEL)
-t16TEL <- raster::stack(t16TEL, z)
+t16TEL <- raster::addLayer(t16TEL, z)
 names(t16TEL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST_unscaled")
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST")
 
 t16TDL<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16TDL _input_stack.tif")
 a <- crop(LSTmerged, t16TDL)
 a <- resample(a, t16TDL)
-t16TDL <- raster::stack(t16TDL, a)
+t16TDL <- raster::addLayer(t16TDL, a)
 names(t16TDL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST_unscaled")
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST")
 
 #input data csv------
 gc()
@@ -91,7 +88,6 @@ All_counties_input[sapply(All_counties_input, is.infinite)] <- NA
 All_counties_input <- na.omit(All_counties_input)
 plyr::count(All_counties_input$Cover_Crop_PA)
 plyr::count(All_counties_input$Cover_Crop_Specific)
-
 
 #random forest model develop
 #Gonna try github method from here: https://gist.github.com/hakimabdi/720f1481af9eca0b7b97d9856052e0e2
@@ -151,7 +147,7 @@ rf_prediction2= raster::predict(t16TDK, model=rf_modelLST)
 rf_prediction3 = raster::predict(t16TDL, model=rf_modelLST)
 rf_prediction4 = raster::predict(t16TEL, model=rf_modelLST)
 
-#plot(rf_prediction1)
+raster::plot(rf_prediction1)
 #plot(rf_prediction2)
 #plot(rf_prediction3)
 #plot(rf_prediction4)
@@ -164,10 +160,10 @@ rf_Eval1 = extract(rf_prediction1, eva.sp)
 rf_Eval2 = extract(rf_prediction2, eva.sp)
 rf_Eval3 = extract(rf_prediction3, eva.sp)
 rf_Eval4 = extract(rf_prediction4, eva.sp)
-e <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
-r2 <- raster(e)
-res(r2) <- c(0.00356, 0.00266)
-crs(r2) <- "+proj=longlat +datum=WGS84 +no_defs"
+#e <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
+#r2 <- raster(e)
+#res(r2) <- c(0.00356, 0.00266)
+#crs(r2) <- "+proj=longlat +datum=WGS84 +no_defs"
 #f <- extend(rf_prediction1, e)
 #f <- resample(f, r2)
 #d <- extend(rf_prediction2, e)
@@ -178,7 +174,8 @@ crs(r2) <- "+proj=longlat +datum=WGS84 +no_defs"
 #b <- resample(b,r2)
 #plot(calc(stack(f,d,c,b), mean_na))
 
-length(rf_Eval3)
+length(rf_Eval1)
+recode(rf_Eval1, "1='Class0'; 2='ClassC'") 
 length(eva$Cover_Crop_PA)
 rf_errorM1 = confusionMatrix(as.factor(rf_Eval1),as.factor(eva$Cover_Crop_PA))
 rf_errorM2 = confusionMatrix(as.factor(rf_Eval2),as.factor(eva$Cover_Crop_PA))
@@ -239,6 +236,23 @@ rf2_prediction1 = raster::predict(t16SDH, model=rf_model2)
 rf2_prediction2= raster::predict(t16TDK, model=rf_model2)
 rf2_prediction3 = raster::predict(t16TDL, model=rf_model2)
 rf2_prediction4 = raster::predict(t16TEL, model=rf_model2)
+
+#This is to plot everything on the same map (I'll want to fix up the rest of these too)
+e <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
+r2 <- raster(e)
+res(r2) <- c(0.00356, 0.00266)
+crs(r2) <- "+proj=longlat +datum=WGS84 +no_defs"
+x <- extend(rf2_prediction1, e)
+x <- resample(x, r2)
+y <- extend(rf2_prediction2, e)
+y <- resample(y,r2)
+z <- extend(rf2_prediction3, e)
+z <- resample(z,r2)
+a <- extend(rf2_prediction4, e)
+a <- resample(a,r2)
+
+tst <- stack(x,y,z,a)
+plot(calc(tst,mean_na))
 
 #rf_prediction_prob = raster::predict(t16SDH, model=rf_model, type="prob")
 
