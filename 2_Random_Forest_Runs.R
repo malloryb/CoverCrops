@@ -143,6 +143,10 @@ varImp(rf_modelLST)
 # Apply the random forest model to the HLS data-----
 gc()
 rf_prediction1 = raster::predict(t16SDH, model=rf_modelLST)
+rf_prediction1_2 = raster::predict(t16SDH, model=rf_modelSWIR)
+rf_prediction1_3 = raster::predict(t16SDH, model=rf_modelVISNir)
+rf_prediction1_4 = raster::predict(t16SDH, model=rf_modelNDVI)
+
 rf_prediction2= raster::predict(t16TDK, model=rf_modelLST)
 rf_prediction3 = raster::predict(t16TDL, model=rf_modelLST)
 rf_prediction4 = raster::predict(t16TEL, model=rf_modelLST)
@@ -157,6 +161,10 @@ raster::plot(rf_prediction1)
 # Convert the evaluation data into a spatial object using the X and Y coordinates and extract predicted values
 # Create an error matrix for each of the classifiers
 rf_Eval1 = extract(rf_prediction1, eva.sp)
+rf_Eval1_2 = extract(rf_prediction1_2, eva.sp)
+rf_Eval1_3 = extract(rf_prediction1_3, eva.sp)
+rf_Eval1_4 = extract(rf_prediction1_4, eva.sp)
+
 rf_Eval2 = extract(rf_prediction2, eva.sp)
 rf_Eval3 = extract(rf_prediction3, eva.sp)
 rf_Eval4 = extract(rf_prediction4, eva.sp)
@@ -174,13 +182,21 @@ rf_Eval4 = extract(rf_prediction4, eva.sp)
 #b <- resample(b,r2)
 #plot(calc(stack(f,d,c,b), mean_na))
 
-length(rf_Eval1)
-recode(rf_Eval1, "1='Class0'; 2='ClassC'") 
-length(eva$Cover_Crop_PA)
-rf_errorM1 = confusionMatrix(as.factor(rf_Eval1),as.factor(eva$Cover_Crop_PA))
-rf_errorM2 = confusionMatrix(as.factor(rf_Eval2),as.factor(eva$Cover_Crop_PA))
-rf_errorM3 = confusionMatrix(as.factor(rf_Eval3),as.factor(eva$Cover_Crop_PA))
-rf_errorM4 = confusionMatrix(as.factor(rf_Eval4),as.factor(eva$Cover_Crop_PA))
+rf_errorM1 = confusionMatrix(recode(as.factor(rf_Eval1), "1"= "Class0", "2"="ClassC"),as.factor(eva$Cover_Crop_PA),positive="ClassC")
+rf_errorM1_2 = confusionMatrix(recode(as.factor(rf_Eval1_2), "1"= "Class0", "2"="ClassC"),as.factor(eva$Cover_Crop_PA), positive="ClassC")
+rf_errorM1_3 = confusionMatrix(recode(as.factor(rf_Eval1_3), "1"= "Class0", "2"="ClassC"),as.factor(eva$Cover_Crop_PA), positive="ClassC")
+rf_errorM1_4 = confusionMatrix(recode(as.factor(rf_Eval1_4), "1"= "Class0", "2"="ClassC"),as.factor(eva$Cover_Crop_PA), positive="ClassC")
+rf_errorM1
+rf_errorM1_2
+rf_errorM1_3
+rf_errorM1_4
+
+
+
+
+rf_errorM2 = confusionMatrix(recode(as.factor(rf_Eval2), "1"= "Class0", "2"="ClassC"),as.factor(eva$Cover_Crop_PA), positive="ClassC")
+rf_errorM3 = confusionMatrix(recode(as.factor(rf_Eval3), "1"= "Class0", "2"="ClassC"),as.factor(eva$Cover_Crop_PA), positive="ClassC")
+rf_errorM4 = confusionMatrix(recode(as.factor(rf_Eval4), "1"= "Class0", "2"="ClassC"),as.factor(eva$Cover_Crop_PA), positive="ClassC")
 rf_errorM1
 rf_errorM2
 rf_errorM3
