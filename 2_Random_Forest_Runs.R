@@ -94,7 +94,7 @@ plyr::count(All_counties_input$Cover_Crop_Specific)
 # Split the data frame into 70-30 by class
 #First grouping------
 # Create model weights (they sum to one)
-set.seed(900)
+set.seed(400)
 str(All_counties_input)
 All_counties_input <- upSample(All_counties_input, All_counties_input$Cover_Crop_PA)
 sample <-sample.split(All_counties_input$Cover_Crop_PA, SplitRatio = 0.8)
@@ -103,8 +103,7 @@ eva=subset(All_counties_input, sample==FALSE)
 eva.sp = SpatialPointsDataFrame(coords = cbind(eva$R_Lon, eva$R_Lat), data = eva, proj4string = crs("+proj=longlat +datum=WGS84 +no_defs"))
 # Set up a resampling method in the model training process
 tc <- trainControl(method = "rf", # repeated cross-validation of the training data
-                   preProcess= c("scale", "center"),
-                  number = 10, # number of folds
+                     number = 10, # number of folds
                    repeats = 10, # number of repeats
                    allowParallel = FALSE, # allow use of multiple cores if specified in training
                    verboseIter = TRUE) # view the training iterations
@@ -205,7 +204,8 @@ rf_errorM4
 gc()
 #Second grouping- 3 class model-----
 levels(All_counties_input$Cover_Crop_Specific)
-sample <-sample.split(All_counties_input$Cover_Crop_Specific, SplitRatio = 0.70)
+All_counties_input <- upSample(All_counties_input, All_counties_input$Cover_Crop_Specific)
+sample <-sample.split(All_counties_input$Cover_Crop_Specific, SplitRatio = 0.80)
 trn=subset(All_counties_input, sample==TRUE)
 eva=subset(All_counties_input, sample==FALSE)
 levels(All_counties_input$Cover_Crop_Specific)
@@ -226,13 +226,13 @@ rf.grid <- expand.grid(mtry=1:10) # number of variables available for splitting 
 #rf_model2 <- caret::train(x = trn[,(9:22)], y = as.factor(trn$Cover_Crop_Specific),
 #                         method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 
-rf_modelLST2 <- caret::train(x = trn[,(8:25)], y = as.factor(trn$Cover_Crop_Specific),
+rf_modelLST2 <- caret::train(x = trn[,(9:26)], y = as.factor(trn$Cover_Crop_Specific),
                             method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-rf_modelSWIR2 <- caret::train(x = trn[,(8:20)], y = as.factor(trn$Cover_Crop_Specific),
+rf_modelSWIR2 <- caret::train(x = trn[,(9:21)], y = as.factor(trn$Cover_Crop_Specific),
                              method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-rf_modelVISNir2 <- caret::train(x = trn[,(8:18)], y = as.factor(trn$Cover_Crop_Specific),
+rf_modelVISNir2 <- caret::train(x = trn[,(9:19)], y = as.factor(trn$Cover_Crop_Specific),
                                method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-rf_modelNDVI2 <- caret::train(x = trn[17], y = as.factor(trn$Cover_Crop_Specific),
+rf_modelNDVI2 <- caret::train(x = trn[12], y = as.factor(trn$Cover_Crop_Specific),
                              method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 
 rf_modelLST2
