@@ -146,6 +146,14 @@ rf_prediction1_2 = raster::predict(t16SDH, model=rf_modelSWIR)
 rf_prediction1_3 = raster::predict(t16SDH, model=rf_modelVISNir)
 rf_prediction1_4 = raster::predict(t16SDH, model=rf_modelNDVI)
 
+writeRaster(rf_prediction1, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/LST_model_PA_12_11.tif")
+
+raster::plot(rf_prediction1)
+library(ggplot2)
+library(reshape2)
+raster::hist(rf_prediction1)
+
+
 rf_prediction2= raster::predict(t16TDK, model=rf_modelLST)
 rf_prediction3 = raster::predict(t16TDL, model=rf_modelLST)
 rf_prediction4 = raster::predict(t16TEL, model=rf_modelLST)
@@ -248,7 +256,11 @@ save(rf_model2,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Inpu
 #random forest model evalaute
 ## Apply the models to data. It took my imac 16 minutes to apply the random forest model
 # Apply the random forest model to the HLS data
-rf2_prediction1 = raster::predict(t16SDH, model=rf_model2)
+rf2_prediction1 = raster::predict(t16SDH, model=rf_modelLST2)
+rf2_prediction1_2 = raster::predict(t16SDH, model=rf_modelSWIR2)
+rf2_prediction1_3 = raster::predict(t16SDH, model=rf_modelVISNir2)
+rf2_prediction1_4 = raster::predict(t16SDH, model=rf_modelNDVI2)
+
 rf2_prediction2= raster::predict(t16TDK, model=rf_model2)
 rf2_prediction3 = raster::predict(t16TDL, model=rf_model2)
 rf2_prediction4 = raster::predict(t16TEL, model=rf_model2)
@@ -278,10 +290,20 @@ length(eva$Cover_Crop_Specific)
 eva.sp = SpatialPointsDataFrame(coords = cbind(eva$R_Lon, eva$R_Lat), data = eva, proj4string = crs("+proj=longlat +datum=WGS84 +no_defs"))
 length(eva.sp)
 rf2_Eval1 = extract(rf2_prediction1, eva.sp)
+rf2_Eval1_2 = extract(rf2_prediction1_2, eva.sp)
+rf2_Eval1_3 = extract(rf2_prediction1_3, eva.sp)
+rf2_Eval1_4 = extract(rf2_prediction1_4, eva.sp)
+
 rf2_Eval2 = extract(rf2_prediction2, eva.sp)
 rf2_Eval3 = extract(rf2_prediction3, eva.sp)
 rf2_Eval4 = extract(rf2_prediction4, eva.sp)
-rf2_errorM1 = confusionMatrix(as.factor(rf2_Eval1),as.factor(eva$Cover_Crop_Specific))
+
+
+rf2_errorM1 = confusionMatrix(recode(as.factor(rf2_Eval1), "1"= "Class0", "2"="ClassC", "3"="ClassT"),as.factor(eva$Cover_Crop_Specific))
+rf2_errorM1_2 = confusionMatrix(recode(as.factor(rf2_Eval1_2), "1"= "Class0", "2"="ClassC", "3"="ClassT"),as.factor(eva$Cover_Crop_Specific))
+rf2_errorM1_3 = confusionMatrix(recode(as.factor(rf2_Eval1_3), "1"= "Class0", "2"="ClassC", "3"="ClassT"),as.factor(eva$Cover_Crop_Specific))
+rf2_errorM1_4 = confusionMatrix(recode(as.factor(rf2_Eval1_4), "1"= "Class0", "2"="ClassC", "3"="ClassT"),as.factor(eva$Cover_Crop_Specific))
+
 rf2_errorM2 = confusionMatrix(as.factor(rf2_Eval2),as.factor(eva$Cover_Crop_Specific))
 rf2_errorM3 = confusionMatrix(as.factor(rf2_Eval3),as.factor(eva$Cover_Crop_Specific))
 rf2_errorM4 = confusionMatrix(as.factor(rf2_Eval4),as.factor(eva$Cover_Crop_Specific))
