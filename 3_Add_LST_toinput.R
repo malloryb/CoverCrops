@@ -19,7 +19,10 @@ process_LandsatST <- function(x, tile=y){
   ext1 <- extent(tst)
   extent(cloud) <- ext1
   print("recoding QA raster")
-  cloud[!cloud==2720 |  !cloud==2724 | !cloud==2728| !cloud==2732] <- NA
+  #This is for the level 1 QA, but not for our QA for the ST Product
+  #[!cloud==2720 |  !cloud==2724 | !cloud==2728| !cloud==2732] <- NA
+  cloud <- cloud*0.01 #scale factor: https://prd-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/atoms/files/LSDS-1330-LandsatSurfaceTemperature_ProductGuide-v2.pdf
+  cloud[cloud > 7] <- NA
   #where y = the 6 digit landsat tile
   #read file
   print("masking raster")
@@ -33,7 +36,7 @@ process_LandsatST <- function(x, tile=y){
 }
 
 tst <- process_LandsatST(x=listST[grep("021010", listST)], tile="021010")
-
+raster::plot(tst)
 #raster::stack by tile and extract from there - figure out mosaicing later
 listST <- list.files(path="/Volumes/G-RAID_Thunderbolt3/Bulk Order Indiana Provisional Surface Temp/U.S. Landsat 4-8 ARD", recursive = TRUE, pattern = "*_ST.tif", full.names = FALSE)
 #Pull tile from filename
