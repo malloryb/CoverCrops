@@ -35,6 +35,9 @@ plyr::count(All_counties_input$Cover_Crop_Specific)
 Cover <- subset(All_counties_input, county=="Posey" & Cover_Crop_Specific=="ClassC")
 Conventional <- subset(All_counties_input, county=="Posey" & Cover_Crop_Specific=="Class0")
 Residue <- subset(All_counties_input, county=="Posey" & Cover_Crop_Specific=="ClassT")
+head(Cover)
+head(Conventional)
+head(Residue)
 #Now, cbind everything together?
 #Gonna scale within the time series of the year, right? 
 #Try for one point first.
@@ -110,14 +113,14 @@ df3$LSTCon <- LSTxCseason
 
 NDVidata <- melt(df, id=c("date"))
 ggplot(NDVidata[!is.na(NDVidata$value),], aes(x=date, y=value, color=variable, group=variable))+
-  geom_line()+
+  #geom_line()+
   geom_smooth(span=0.1)+
   theme_minimal()
 
 
 SWIRdata <- melt(df2, id=c("date"))
 ggplot(SWIRdata[!is.na(SWIRdata$value),], aes(x=date, y=value, color=variable, group=variable))+
-  geom_line()+
+  #geom_line()+
   geom_smooth(span=0.1)+
   theme_minimal()
 
@@ -125,7 +128,39 @@ ggplot(SWIRdata[!is.na(SWIRdata$value),], aes(x=date, y=value, color=variable, g
 LSTdata <- melt(df3, id=c("date"))
 ggplot(LSTdata[!is.na(LSTdata$value),], aes(x=date, y=value, color=variable, group=variable))+
   geom_line()+
-  geom_smooth(span=0.3)+
+  #geom_smooth(span=0.3)+
   theme_minimal()
 
+#Going to try setting conventional agriculture to zero here. 
 
+df$NDVIR_diff <- df$NDVIR - df$NDVICon 
+df$NDVICC_diff <- df$NDVICC - df$NDVICon 
+NDVidata2 <- melt(df[,c("date", "NDVIR_diff", "NDVICC_diff")], id=c("date"))
+ggplot(NDVidata2[!is.na(NDVidata2$value),], aes(x=date, y=value, color=variable, group=variable))+
+  #geom_line()+
+  ylab("NDVI")+
+  geom_smooth(span=0.5, se=FALSE)+
+  geom_hline(aes(yintercept=0))+
+  theme_minimal(base_size=18)
+
+
+df2$SWIRR_diff <- df2$SWIRR - df2$SWIRCon 
+df2$SWIRCC_diff <- df2$SWIRCC - df2$SWIRCon 
+SWIRdata2 <- melt(df2[,c("date", "SWIRR_diff", "SWIRCC_diff")], id=c("date"))
+ggplot(SWIRdata2[!is.na(NDVidata2$value),], aes(x=date, y=value, color=variable, group=variable))+
+  #geom_line()+
+  ylab("SINDRI")+
+  geom_smooth(span=0.5, se=FALSE)+
+  geom_hline(aes(yintercept=0))+
+  theme_minimal(base_size=18)
+
+
+df3$LSTR_diff <- df3$LSTR - df3$LSTCon 
+df3$LSTCC_diff <- df3$LSTCC - df3$LSTCon 
+LSTdata2 <- melt(df3[,c("date", "LSTR_diff", "LSTCC_diff")], id=c("date"))
+ggplot(LSTdata2[!is.na(NDVidata2$value),], aes(x=date, y=value, color=variable, group=variable))+
+  #geom_line()+
+  ylab("LST") +
+  geom_smooth(span=0.5, se=FALSE)+
+  geom_hline(aes(yintercept=0))+
+  theme_minimal(base_size=18)
