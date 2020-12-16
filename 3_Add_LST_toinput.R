@@ -10,6 +10,7 @@ plot(tst3)
 
 process_LandsatST <- function(x, tile=y){
   listQA <- list.files(path="/Volumes/G-RAID_Thunderbolt3/Bulk Order Indiana Provisional Surface Temp/U.S. Landsat 4-8 ARD/", recursive=TRUE, pattern="*STQA.tif", full.names=TRUE)
+  print(y)
   tst <- raster::stack(x)
   crs <- "+proj=longlat +datum=WGS84 +no_defs +datum=WGS84 " # desired GeoTIFF SRS
   cloud <- listQA[grep(y, listQA)]
@@ -36,42 +37,55 @@ process_LandsatST <- function(x, tile=y){
 
 listST <- list.files(path="/Volumes/G-RAID_Thunderbolt3/Bulk Order Indiana Provisional Surface Temp/U.S. Landsat 4-8 ARD", recursive = TRUE, pattern = "*_ST.tif", full.names = FALSE)
 
+y <- "021007"
 s021007 <- process_LandsatST(x=listST[grep("021007", listST)], tile="021007")
 writeRaster(s021007, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s021007.tif")
 
+y <- "021008"
 s021008 <- process_LandsatST(x=listST[grep("021008", listST)], tile="021008")
 writeRaster(s021008, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s021008.tif")
 
+y <- "021009"
 s021009 <- process_LandsatST(x=listST[grep("021009", listST)], tile="021009")
 writeRaster(s021009, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s021009.tif")
 
+y <- "021010"
 s021010 <- process_LandsatST(x=listST[grep("021010", listST)], tile="021010")
 writeRaster(s021010, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s021010.tif")
 
+y <- "022007"
 s022007 <- process_LandsatST(x=listST[grep("022007", listST)], tile="022007")
 writeRaster(s022007, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s022007.tif")
 
+y <- "022008"
 s022008 <- process_LandsatST(x=listST[grep("022008", listST)], tile="022008")
 writeRaster(s022008, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s022008.tif")
 
+y <- "022009"
 s022009 <- process_LandsatST(x=listST[grep("022009", listST)], tile="022009")
 writeRaster(s022009, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s022009.tif")
 
+y <- "022010"
 s022010 <- process_LandsatST(x=listST[grep("022010", listST)], tile="022010")
 writeRaster(s022010, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s022010.tif")
 
+y <- "023006"
 s022011 <- process_LandsatST(x=listST[grep("022011", listST)], tile="022011")
 writeRaster(s022011, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s022011.tif")
 
+y <- "023007"
 s023007 <- process_LandsatST(x=listST[grep("023007", listST)], tile="023007")
 writeRaster(s023007, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s023007.tif")
 
+y <- "023008"
 vs023008 <- process_LandsatST(x=listST[grep("023008", listST)], tile="023008")
 writeRaster(s023008, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s023008.tif")
 
+y <- "023009"
 s023009 <- process_LandsatST(x=listST[grep("023009", listST)], tile="023009")
 writeRaster(s023009, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s023009.tif")
 
+y <- "023010"
 s023010 <- process_LandsatST(x=listST[grep("023010", listST)], tile="023010")
 writeRaster(s023010, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s023010.tif")
 
