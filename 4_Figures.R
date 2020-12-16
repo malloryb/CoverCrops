@@ -166,6 +166,7 @@ ggplot(LSTdata2[!is.na(NDVidata2$value),], aes(x=date, y=value, color=variable, 
   theme_minimal(base_size=18)
 
 
+#FIGURE 1! --------------
 
 LST_Appears <- read.csv("/Volumes/G-RAID_Thunderbolt3/CC-more-MOD11A1-006-results.csv")
 NDVI_Appears <- read.csv("/Volumes/G-RAID_Thunderbolt3/CC-more-MOD13Q1-006-results.csv")
