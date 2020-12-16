@@ -42,8 +42,7 @@ listST <- list.files(path="/Volumes/G-RAID_Thunderbolt3/Bulk Order Indiana Provi
 #Pull tile from filename
 substr(listST, 9,14)
 y <- "s021007"
-s021007 <- raster::stack(lapply(listST[grep("021007", listST)], process_LandsatST, tile="021007"))
-names(s021007)
+s021007 <- process_LandsatST(x=listST[grep("021007", listST)], tile="021007")
 writeRaster(s021007, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s021007.tif")
 y <- "s021008"
 s021008 <- raster::stack(lapply(listST[grep("021008", listST)], process_LandsatST))
