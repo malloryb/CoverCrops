@@ -164,3 +164,29 @@ ggplot(LSTdata2[!is.na(NDVidata2$value),], aes(x=date, y=value, color=variable, 
   geom_smooth(span=0.5, se=FALSE)+
   geom_hline(aes(yintercept=0))+
   theme_minimal(base_size=18)
+
+
+
+LST_Appears <- read.csv("/Volumes/G-RAID_Thunderbolt3/CC-more-MOD11A1-006-results.csv")
+NDVI_Appears <- read.csv("/Volumes/G-RAID_Thunderbolt3/CC-more-MOD13Q1-006-results.csv")
+
+LST_Appears$MOD11A1_006_LST_Day_1km
+LST_Appears$Date
+LST_Appears$Category
+
+NDVI_Appears$Date
+NDVI_Appears$MOD13Q1_006__250m_16_days_NDVI
+NDVI_Appears$Category
+
+ggplot(NDVI_Appears, aes(x=as.Date(Date), y=MOD13Q1_006__250m_16_days_NDVI, group=Category, color=Category))+
+  geom_smooth(se=FALSE, span=0.2)+
+  ylim(0,1)+
+  xlab("Date")+
+  ylab("NDVI")+
+  theme_minimal(base_size=20)
+
+ggplot(LST_Appears, aes(x=as.Date(Date), y=MOD11A1_006_LST_Day_1km, group=Category, color=Category))+
+  geom_smooth(se=FALSE, span=0.1)+
+  xlab("Date")+
+  ylab("LST")+
+  theme_minimal(base_size=20)
