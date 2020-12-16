@@ -31,62 +31,52 @@ process_LandsatST <- function(x, tile=y){
   tst2 <- projectRaster(tst2, crs=crs)
   print("projecting and converting to celsius")
   tst3 <- ((tst2/10)-273.15) #gotta rescale and convert to celcius
-  #should mask out the clouds as well...
   return(tst3)
 }
 
-tst <- process_LandsatST(x=listST[grep("021010", listST)], tile="021010")
-raster::plot(tst)
-#raster::stack by tile and extract from there - figure out mosaicing later
 listST <- list.files(path="/Volumes/G-RAID_Thunderbolt3/Bulk Order Indiana Provisional Surface Temp/U.S. Landsat 4-8 ARD", recursive = TRUE, pattern = "*_ST.tif", full.names = FALSE)
-#Pull tile from filename
-substr(listST, 9,14)
-y <- "s021007"
+
 s021007 <- process_LandsatST(x=listST[grep("021007", listST)], tile="021007")
 writeRaster(s021007, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s021007.tif")
-y <- "s021008"
-s021008 <- raster::stack(lapply(listST[grep("021008", listST)], process_LandsatST))
+
+s021008 <- process_LandsatST(x=listST[grep("021008", listST)], tile="021008")
 writeRaster(s021008, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s021008.tif")
-y <- "s021009"
-s021009 <- raster::stack(lapply(listST[grep("021009", listST)], process_LandsatST))
+
+s021009 <- process_LandsatST(x=listST[grep("021009", listST)], tile="021009")
 writeRaster(s021009, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s021009.tif")
-y <- "s021010"
-s021010 <- raster::stack(lapply(listST[grep("021010", listST)], process_LandsatST, tile="021010"))
+
+s021010 <- process_LandsatST(x=listST[grep("021010", listST)], tile="021010")
 writeRaster(s021010, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s021010.tif")
-y <- "s022007"
-s022007 <- raster::stack(lapply(listST[grep("022007", listST)], process_LandsatST))
+
+s022007 <- process_LandsatST(x=listST[grep("022007", listST)], tile="022007")
 writeRaster(s022007, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s022007.tif")
-y <- "s022008"
-s022008 <- raster::stack(lapply(listST[grep("022008", listST)], process_LandsatST))
+
+s022008 <- process_LandsatST(x=listST[grep("022008", listST)], tile="022008")
 writeRaster(s022008, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s022008.tif")
-y <- "s022009"
-s022009 <- raster::stack(lapply(listST[grep("022009", listST)], process_LandsatST))
+
+s022009 <- process_LandsatST(x=listST[grep("022009", listST)], tile="022009")
 writeRaster(s022009, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s022009.tif")
-y <- "s022010"
-s022010 <- raster::stack(lapply(listST[grep("022010", listST)], process_LandsatST))
+
+s022010 <- process_LandsatST(x=listST[grep("022010", listST)], tile="022010")
 writeRaster(s022010, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s022010.tif")
-y <- "s022011"
-s022011 <- raster::stack(lapply(listST[grep("022011", listST)], process_LandsatST))
+
+s022011 <- process_LandsatST(x=listST[grep("022011", listST)], tile="022011")
 writeRaster(s022011, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s022011.tif")
-y <- "s023007"
-s023007 <- raster::stack(lapply(listST[grep("023007", listST)], process_LandsatST))
+
+s023007 <- process_LandsatST(x=listST[grep("023007", listST)], tile="023007")
 writeRaster(s023007, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s023007.tif")
-y <- "s023008"
-s023008 <- raster::stack(lapply(listST[grep("023008", listST)], process_LandsatST))
+
+vs023008 <- process_LandsatST(x=listST[grep("023008", listST)], tile="023008")
 writeRaster(s023008, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s023008.tif")
-#s023008 <- raster::stack(lapply(listST[grep("023008", listST)], process_LandsatST))
-y <- "s023009"
-s023009 <- raster::stack(lapply(listST[grep("023009", listST)], process_LandsatST))
+
+s023009 <- process_LandsatST(x=listST[grep("023009", listST)], tile="023009")
 writeRaster(s023009, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s023009.tif")
-y <- "s023010"
-s023010 <- raster::stack(lapply(listST[grep("023010", listST)], process_LandsatST))
+
+s023010 <- process_LandsatST(x=listST[grep("023010", listST)], tile="023010")
 writeRaster(s023010, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s023010.tif")
 
-SST_list[grep("021007", names(SST_list))]  
-#For each tile, reproject and raster::stack up tifs (by date)
-
-#extract #re-running - do we even need to scale? 
 gc()
+
 inputs <- read.csv("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RS_input_all_12_8.csv")
 inputs
 coords.sp = as.data.frame(cbind(inputs$R_Lon, inputs$R_Lat))
