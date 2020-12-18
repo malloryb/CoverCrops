@@ -143,6 +143,7 @@ varImp(rf_modelNDVI)
 varImp(rf_modelVISNir)
 varImp(rf_modelSWIR)
 varImp(rf_modelLST)
+save(rf_modelLST,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA_12_16.RData")
 
 #save(rf_model,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA.RData")
 #random forest model evalaute
@@ -335,7 +336,7 @@ rf_modelVISNir2
 
 rf_model2
 varImp(rf_modelLST)
-save(rf_model2,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_Cat.RData")
+save(rf_modelLST2,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_Cat_12_16.RData")
 
 #random forest model evalaute
 ## Apply the models to data. It took my imac 16 minutes to apply the random forest model
