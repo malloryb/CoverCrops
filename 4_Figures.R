@@ -191,3 +191,66 @@ ggplot(LST_Appears, aes(x=as.Date(Date), y=MOD11A1_006_LST_Day_1km, group=Catego
   xlab("Date")+
   ylab("LST")+
   theme_minimal(base_size=20)
+
+#Maps for Posey County: Presence Absence & 3 Class----
+#Load rasters
+LSTmerged <- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Input_LST.tif")
+t16SDH<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16SDH _input_stack.tif")
+w <- raster::crop(LSTmerged, t16SDH)
+w <- raster::resample(w, t16SDH)
+t16SDH <- raster::addLayer(t16SDH,w)
+names(t16SDH) <-  c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                    "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST")
+
+t16SEH<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16SEH _input_stack.tif")
+x <- crop(LSTmerged, t16SEH)
+x <- resample(x, t16SEH)
+t16SEH <- raster::addLayer(t16SEH, x)
+names(t16SEH) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST")
+
+t16TDK<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16TDK _input_stack.tif")
+y <- crop(LSTmerged, t16TDK)
+y <- resample(y, t16TDK)
+t16TDK <- raster::addLayer(t16TDK, y)
+names(t16TDK) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST")
+
+t16TEL<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16TEL _input_stack.tif")
+z <- crop(LSTmerged, t16TEL)
+z <- resample(z, t16TEL)
+t16TEL <- raster::addLayer(t16TEL, z)
+names(t16TEL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST")
+
+t16TDL<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16TDL _input_stack.tif")
+a <- crop(LSTmerged, t16TDL)
+a <- resample(a, t16TDL)
+t16TDL <- raster::addLayer(t16TDL, a)
+names(t16TDL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                   "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST")
+#Load RF Models
+PA_Model <- get(load("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA_12_16.RData"))
+Cat_Model <- get(load("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_Cat_12_16.RData"))
+#Predict to Posey County region
+pa_Prediction = raster::predict(t16SDH, model=PA_Model)
+cat_Prediction = raster::predict(t16SDH, model=Cat_Model)
+#Mask to ag regions ONLY!
+inext <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
+Landcover <- raster("/Volumes/G-RAID_Thunderbolt3/Temp_Project/Processed/NCLD_2008_processed.tif")
+LC_crop <- crop(Landcover, inext)
+#2: Croplands (81,82)
+Cropmask<-LC_crop
+Cropmask[Cropmask <81 | Cropmask>82] <- NA
+Cropmask <- resample(Cropmask, pa_Prediction, method="bilinear")
+Cropmask_pa <- mask(pa_Prediction,Cropmask)
+Cropmask_cat <- mask(cat_Prediction,Cropmask)
+
+freq(Cropmask_pa)
+freq(Cropmask_cat)
+
+raster::plot(Cropmask_pa)
+raster::plot(Cropmask_cat)
+#Get percentages
+
+#WriteRasters
