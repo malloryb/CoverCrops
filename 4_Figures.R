@@ -243,19 +243,23 @@ w <- raster::resample(w, t16SDH)
 t16SDH <- raster::addLayer(t16SDH,w)
 names(t16SDH) <-  c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
                     "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST")
-
+#Mask to ag regions ONLY!
 inext <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
 Landcover <- raster("/Volumes/G-RAID_Thunderbolt3/Temp_Project/Processed/NCLD_2008_processed.tif")
 LC_crop <- crop(Landcover, inext)
 #2: Croplands (81,82)
 Cropmask<-LC_crop
-Cropmask[Cropmask <81 | Cropmask>82] <- NA
-Cropmask <- resample(Cropmask, pa_Prediction, method="bilinear")
+Cropmask[!Cropmask==82] <- NA
+Cropmask <- resample(Cropmask, t16SDH, method="bilinear")
 t16SDH_masked <- mask(t16SDH,Cropmask)
 
 pa_Prediction = raster::predict(t16SDH_masked, model=PA_Model)
 cat_Prediction = raster::predict(t16SDH_masked, model=Cat_Model)
-#Mask to ag regions ONLY!
+
+freq(pa_Prediction)
+freq(cat_Prediction)
+raster::plot(pa_Prediction)
+raster::plot(cat_Prediction)
 
 freq(Cropmask_pa)
 freq(Cropmask_cat)
