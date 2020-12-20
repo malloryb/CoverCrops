@@ -1,4 +1,4 @@
-pacman::p_load(raster, ggplot2, gdalUtils, terra, dplyr, rgdal, sp, rhdf5, rlist, randomForest, caTools, caret, maptools, e1071)
+pacman::p_load(raster, ggplot2, gdalUtils, terra, dplyr, rgdal, sp, rhdf5, rlist, randomForest, caTools, caret, maptools, e1071, reshape2)
 
 #Figure A)
 #Phenology of the different types of pixels
@@ -172,6 +172,7 @@ LST_Appears <- read.csv("/Volumes/G-RAID_Thunderbolt3/CC-more-MOD11A1-006-result
 NDVI_Appears <- read.csv("/Volumes/G-RAID_Thunderbolt3/CC-more-MOD13Q1-006-results.csv")
 
 LST_Appears$MOD11A1_006_LST_Day_1km
+LST_Appears$MOD11A1_006_LST_Day_1km <- (LST_Appears$MOD11A1_006_LST_Day_1km- 273.15)
 LST_Appears$Date
 LST_Appears$Category
 
@@ -182,15 +183,17 @@ NDVI_Appears$Category
 ggplot(NDVI_Appears, aes(x=as.Date(Date), y=MOD13Q1_006__250m_16_days_NDVI, group=Category, color=Category))+
   geom_smooth(se=FALSE, span=0.2)+
   ylim(0,1)+
-  xlab("Date")+
+  xlab(NULL)+
   ylab("NDVI")+
-  theme_minimal(base_size=20)
+  theme_minimal(base_size=22)
 
-ggplot(LST_Appears, aes(x=as.Date(Date), y=MOD11A1_006_LST_Day_1km, group=Category, color=Category))+
-  geom_smooth(se=FALSE, span=0.1)+
-  xlab("Date")+
-  ylab("LST")+
-  theme_minimal(base_size=20)
+ggplot(LST_Appears[which(LST_Appears$MOD11A1_006_LST_Day_1km > -20),], aes(x=as.Date(Date), y=MOD11A1_006_LST_Day_1km, group=Category, color=Category))+
+  geom_smooth(span=0.2, se=FALSE)+
+  xlab(NULL)+
+  ylab("Surface Temperature")+
+  xlim(as.Date("2015-10-01"), as.Date("2015-12-01"))+
+  theme_minimal(base_size=22)
+
 
 #Maps for Posey County: Presence Absence & 3 Class----
 #Load rasters
@@ -233,9 +236,14 @@ names(t16TDL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_
 PA_Model <- get(load("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA_12_16.RData"))
 Cat_Model <- get(load("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_Cat_12_16.RData"))
 #Predict to Posey County region
-pa_Prediction = raster::predict(t16SDH, model=PA_Model)
-cat_Prediction = raster::predict(t16SDH, model=Cat_Model)
-#Mask to ag regions ONLY!
+
+t16SDH<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16SDH _input_stack.tif")
+w <- raster::crop(LSTmerged, t16SDH)
+w <- raster::resample(w, t16SDH)
+t16SDH <- raster::addLayer(t16SDH,w)
+names(t16SDH) <-  c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                    "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST")
+
 inext <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
 Landcover <- raster("/Volumes/G-RAID_Thunderbolt3/Temp_Project/Processed/NCLD_2008_processed.tif")
 LC_crop <- crop(Landcover, inext)
@@ -243,8 +251,11 @@ LC_crop <- crop(Landcover, inext)
 Cropmask<-LC_crop
 Cropmask[Cropmask <81 | Cropmask>82] <- NA
 Cropmask <- resample(Cropmask, pa_Prediction, method="bilinear")
-Cropmask_pa <- mask(pa_Prediction,Cropmask)
-Cropmask_cat <- mask(cat_Prediction,Cropmask)
+t16SDH_masked <- mask(t16SDH,Cropmask)
+
+pa_Prediction = raster::predict(t16SDH_masked, model=PA_Model)
+cat_Prediction = raster::predict(t16SDH_masked, model=Cat_Model)
+#Mask to ag regions ONLY!
 
 freq(Cropmask_pa)
 freq(Cropmask_cat)
