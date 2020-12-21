@@ -236,36 +236,36 @@ names(t16TDL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_
 PA_Model <- get(load("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA_12_16.RData"))
 Cat_Model <- get(load("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_Cat_12_16.RData"))
 #Predict to Posey County region
-
-t16SDH<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16SDH _input_stack.tif")
-w <- raster::crop(LSTmerged, t16SDH)
-w <- raster::resample(w, t16SDH)
-t16SDH <- raster::addLayer(t16SDH,w)
-names(t16SDH) <-  c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
-                    "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST")
+origin(t16TDL) <- 0
+origin(t16TEL) <- 0
+merge(t16TDL, t16TEL)
 #Mask to ag regions ONLY!
 inext <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
 Landcover <- raster("/Volumes/G-RAID_Thunderbolt3/Temp_Project/Processed/NCLD_2008_processed.tif")
 LC_crop <- crop(Landcover, inext)
 #2: Croplands (81,82)
 Cropmask<-LC_crop
-Cropmask[!Cropmask==82] <- NA
+Cropmask[Cropmask<80] <- NA
 Cropmask <- resample(Cropmask, t16SDH, method="bilinear")
 t16SDH_masked <- mask(t16SDH,Cropmask)
+t16SEH_masked <- mask(t16SEH,Cropmask)
+t16TDK_masked <- mask(t16TDK,Cropmask)
+t16TDL_masked <- mask(t16TDL,Cropmask)
+t16TEL_masked <- mask(t16TEL,Cropmask)
+
+Pred1 <- raster::predict(t16SDH_masked, model=PA_Model)
+Pred2 <- raster::predict(t16SEH_masked, model=PA_Model)
+Pred3 <- raster::predict(t16TDK_masked, model=PA_Model)
+Pred4 <- raster::predict(t16TDL_masked, model=PA_Model)
+Pred5 <- raster::predict(t16TEL_masked, model=PA_Model)
 
 pa_Prediction = raster::predict(t16SDH_masked, model=PA_Model)
 cat_Prediction = raster::predict(t16SDH_masked, model=Cat_Model)
 
-freq(pa_Prediction)
-freq(cat_Prediction)
-raster::plot(pa_Prediction)
+freq(Pred1)
+raster::plot(Pred1)
 raster::plot(cat_Prediction)
 
-freq(Cropmask_pa)
-freq(Cropmask_cat)
-
-raster::plot(Cropmask_pa)
-raster::plot(Cropmask_cat)
 #Get percentages
 
 #WriteRasters
