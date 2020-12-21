@@ -90,6 +90,30 @@ s023010 <- process_LandsatST(x=listST[grep("023010", listST)], tile="023010")
 writeRaster(s023010, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/s023010.tif")
 
 gc()
+#Getting LST stack properly-----
+mean_na_x <- function(x) {
+  e <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
+  r2 <- raster(e)
+  res(r2) <- c(0.00356, 0.00266)
+  crs(r2) <- "+proj=longlat +datum=WGS84 +no_defs"
+  x <- raster::stack(x)
+  x <- x[[1:3]]
+  y <- mean(x,na.rm=T)
+  y <- raster::extend(y, e)
+  y <- raster::resample(y,r2)
+  print(res(y))
+  return(y)
+}
+
+#First load all the stacks 
+LSTlist <- list.files(path="/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana", recursive = FALSE, pattern = "^s", full.names = TRUE)
+#Then get the mean of the oct/nov observations
+liststack <- lapply(LSTlist, FUN=raster::stack)
+#Then mosaic all togteher
+LSTmerged <- do.call(merge, lapply(liststack, mean_na_x))
+writeRaster(LSTmerged, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Input_LST_12_20.tif", overwrite=TRUE)
+
+mean_na_x(liststack[[1]])
 
 inputs <- read.csv("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RS_input_all_12_8.csv")
 inputs
