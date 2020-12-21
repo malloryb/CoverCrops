@@ -196,8 +196,9 @@ ggplot(LST_Appears[which(LST_Appears$MOD11A1_006_LST_Day_1km > -20),], aes(x=as.
 
 
 #Maps for Posey County: Presence Absence & 3 Class----
+inext <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
 #Load rasters
-LSTmerged <- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Input_LST.tif")
+LSTmerged <- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Input_LST_12_20.tif")
 t16SDH<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16SDH _input_stack.tif")
 w <- raster::crop(LSTmerged, t16SDH)
 w <- raster::resample(w, t16SDH)
@@ -205,6 +206,8 @@ t16SDH <- raster::addLayer(t16SDH,w)
 names(t16SDH) <-  c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
                     "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST")
 
+raster::plot(t16SDH[[4]])
+raster::plot(t16SDH[[18]])
 t16SEH<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16SEH _input_stack.tif")
 x <- crop(LSTmerged, t16SEH)
 x <- resample(x, t16SEH)
@@ -236,36 +239,92 @@ names(t16TDL) <- c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_
 PA_Model <- get(load("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA_12_16.RData"))
 Cat_Model <- get(load("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_Cat_12_16.RData"))
 #Predict to Posey County region
-origin(t16TDL) <- 0
-origin(t16TEL) <- 0
-merge(t16TDL, t16TEL)
+Pred1 <- raster::predict(t16SDH, model=PA_Model)
+Pred2 <- raster::predict(t16SEH, model=PA_Model)
+Pred3 <- raster::predict(t16TDK, model=PA_Model)
+Pred4 <- raster::predict(t16TDL, model=PA_Model)
+Pred5 <- raster::predict(t16TEL, model=PA_Model)
+Pred1mask <- raster::mask((extend(Pred1, inext)),resample(Cropmask, extend(Pred1, inext), method="bilinear"))
+raster::plot(Pred1mask)
+writeRaster(Pred1mask, "/Volumes/G-RAID_Thunderbolt3/Yoder_Project/Pred1pamask.tif")
+Pred2mask <- raster::mask((extend(Pred2, inext)),resample(Cropmask, extend(Pred2, inext), method="bilinear"))
+writeRaster(Pred2mask, "/Volumes/G-RAID_Thunderbolt3/Yoder_Project/Pred2pamask.tif")
+Pred3mask <- raster::mask((extend(Pred3, inext)),resample(Cropmask, extend(Pred3, inext), method="bilinear"))
+writeRaster(Pred3mask, "/Volumes/G-RAID_Thunderbolt3/Yoder_Project/Pred3pamask.tif", overwrite=TRUE)
+Pred4mask <- raster::mask((extend(Pred4, inext)),resample(Cropmask, extend(Pred4, inext), method="bilinear"))
+writeRaster(Pred4mask, "/Volumes/G-RAID_Thunderbolt3/Yoder_Project/Pred4pamask.tif", overwrite=TRUE)
+Pred5mask <- raster::mask((extend(Pred5, inext)),resample(Cropmask, extend(Pred5, inext), method="bilinear"))
+writeRaster(Pred5mask, "/Volumes/G-RAID_Thunderbolt3/Yoder_Project/Pred5pamask.tif", overwrite=TRUE)
+
+raster::plot(Pred2)
+raster::plot(Pred3)
+raster::plot(Pred4)
+raster::plot(Pred5)
+freq(Pred1)
+Pred1mask <- raster::mask(Pred1, Cropmask)
+freq(Pred1mask)
+freq(Pred2)
+freq(Pred3)
+freq(Pred4)
+freq(Pred5)
+
 #Mask to ag regions ONLY!
-inext <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
+
 Landcover <- raster("/Volumes/G-RAID_Thunderbolt3/Temp_Project/Processed/NCLD_2008_processed.tif")
 LC_crop <- crop(Landcover, inext)
 #2: Croplands (81,82)
 Cropmask<-LC_crop
 Cropmask[Cropmask<80] <- NA
-Cropmask <- resample(Cropmask, t16SDH, method="bilinear")
-t16SDH_masked <- mask(t16SDH,Cropmask)
-t16SEH_masked <- mask(t16SEH,Cropmask)
-t16TDK_masked <- mask(t16TDK,Cropmask)
-t16TDL_masked <- mask(t16TDL,Cropmask)
-t16TEL_masked <- mask(t16TEL,Cropmask)
+Cropmask <- resample(Cropmask, extend(Pred1c, inext), method="bilinear")
 
-Pred1 <- raster::predict(t16SDH_masked, model=PA_Model)
-Pred2 <- raster::predict(t16SEH_masked, model=PA_Model)
-Pred3 <- raster::predict(t16TDK_masked, model=PA_Model)
-Pred4 <- raster::predict(t16TDL_masked, model=PA_Model)
-Pred5 <- raster::predict(t16TEL_masked, model=PA_Model)
+#Predict to all study counties
+Pred1c <- raster::predict(t16SDH, model=Cat_Model)
+Pred2c <- raster::predict(t16SEH, model=Cat_Model)
+Pred3c <- raster::predict(t16TDK, model=Cat_Model)
+Pred4c <- raster::predict(t16TDL, model=Cat_Model)
+Pred5c <- raster::predict(t16TEL, model=Cat_Model)
+freq(Pred1c)
+freq(Pred2c)
+freq(Pred3c)
+freq(Pred4c)
+freq(Pred5c)
+Pred1cmask <- raster::mask((extend(Pred1c, inext)),resample(Cropmask, extend(Pred1c, inext), method="bilinear"))
+raster::plot(Pred1cmask)
+writeRaster(Pred1cmask, "/Volumes/G-RAID_Thunderbolt3/Yoder_Project/Pred1catmask1.tif")
+gc()
+Pred2cmask <- raster::mask((extend(Pred2c, inext)),resample(Cropmask, extend(Pred2c, inext), method="bilinear"))
+writeRaster(Pred2cmask, "/Volumes/G-RAID_Thunderbolt3/Yoder_Project/Pred2catmask.tif", overwrite=TRUE)
+Pred3cmask <- raster::mask((extend(Pred3c, inext)),resample(Cropmask, extend(Pred3c, inext), method="bilinear"))
+writeRaster(Pred3cmask, "/Volumes/G-RAID_Thunderbolt3/Yoder_Project/Pred3catmask.tif", overwrite=TRUE)
+Pred4cmask <- raster::mask((extend(Pred4c, inext)),resample(Cropmask, extend(Pred4c, inext), method="bilinear"))
+writeRaster(Pred4cmask, "/Volumes/G-RAID_Thunderbolt3/Yoder_Project/Pred4catmask.tif", overwrite=TRUE)
+Pred5cmask <- raster::mask((extend(Pred5c, inext)),resample(Cropmask, extend(Pred5c, inext), method="bilinear"))
+writeRaster(Pred5cmask, "/Volumes/G-RAID_Thunderbolt3/Yoder_Project/Pred5catmask.tif", overwrite=TRUE)
 
-pa_Prediction = raster::predict(t16SDH_masked, model=PA_Model)
-cat_Prediction = raster::predict(t16SDH_masked, model=Cat_Model)
-
-freq(Pred1)
-raster::plot(Pred1)
-raster::plot(cat_Prediction)
-
+raster::plot(Pred1cmask)
 #Get percentages
 
 #WriteRasters
+
+#If I decide to mask again....
+#t16SDH_masked <- mask(t16SDH,Cropmask)
+#t16SEH_masked <- mask(t16SEH,Cropmask)
+#t16TDK_masked <- mask(t16TDK,Cropmask)
+#t16TDL_masked <- mask(t16TDL,Cropmask)
+#t16TEL_masked <- mask(t16TEL,Cropmask)
+
+#Let's look at side by side plots of: Category, P/A, NDVI, SWIR, and  LST
+
+raster::plot(Pred1)
+raster::plot(Pred1c)
+raster::plot(t16SDH[[4]])
+raster::plot(t16SDH[[12]]) 
+raster::plot(t16SDH[[18]])
+
+tststack <- raster::stack(Pred1, Pred1c, t16SDH[[4]], t16SDH[[13]], t16SDH[[18]])
+levelplot(tststack)
+rasterVis::levelplot(Pred1)
+rasterVis::levelplot(Pred1c)
+rasterVis::levelplot(t16SDH[[4]])
+rasterVis::levelplot(t16SDH[[12]])
+rasterVis::levelplot(t16SDH[[18]])
