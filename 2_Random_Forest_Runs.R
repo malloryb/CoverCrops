@@ -1,5 +1,5 @@
 #"Clean" Start to random forest model runs
-pacman::p_load(raster, gdalUtils, terra, dplyr, rgdal, sp, rhdf5, rlist, randomForest, caTools, caret, maptools, e1071)
+pacman::p_load(raster, gdalUtils, terra, dplyr, rgdal, sp, rhdf5, rlist, randomForest, caTools, caret, maptools, e1071, caretEnsemble, lattice, gridExtra)
 
 mean_na_x <- function(x) {
   e <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
@@ -166,9 +166,42 @@ rasterVis::histogram(rf_prediction2)
 rasterVis::histogram(rf_prediction3)
 rasterVis::histogram(rf_prediction4)
 
+varImpPlot(rf_modelLST)
 rf_prediction2= raster::predict(t16TDK, model=rf_modelLST)
 rf_prediction3 = raster::predict(t16TDL, model=rf_modelLST)
 rf_prediction4 = raster::predict(t16TEL, model=rf_modelLST)
+
+varImp(rf_modelLST)
+# Custom function ---------------------------------------------------------
+# The function requires list of models as input and is used in for loop 
+plot_importance <- function(importance_list, imp, algo_names) {
+  importance <- importance_list[[imp]]$importance
+  model_title <- algo_names[[imp]]
+  if (ncol(importance) < 2) { # Plot dotplot if dim is ncol < 2
+    importance %>%
+      as.matrix() %>%
+      dotplot(main = model_title)
+  } else { # Plot heatmap if ncol > 2
+    importance %>%
+      as.matrix() %>%
+      levelplot(xlab = NULL, ylab = NULL, main = model_title, scales = list(x = list(rot = 45)))
+  }
+}
+my_list_of_models <- c(rf_modelLST, rf_modelLST2)
+importance <- lapply(my_list_of_models, varImp)
+
+# Plotting variable immportance -------------------------------------------
+# Create second loop to go over extracted importance and plot it using plot()
+importance_plots <- list()
+for (imp in seq_along(importance)) {
+  # importance_plots[[imp]] <- plot(importance[[imp]])
+  importance_plots[[imp]] <- plot_importance(importance_list = importance, imp = imp, algo_names = names(my_list_of_models))
+}
+
+importance_plots
+# Multiple plots at once
+do.call("grid.arrange", c(importance_plots))
+
 
 rf1In <- extend(rf_prediction1, e)  
 rf2In <- extend(rf_prediction2, e)  
