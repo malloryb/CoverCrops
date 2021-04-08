@@ -1,5 +1,5 @@
 #"Clean" Start to random forest model runs
-pacman::p_load(raster, gdalUtils, terra, dplyr, rgdal, sp, rhdf5, rlist, randomForest, caTools, caret, maptools, e1071, caretEnsemble, lattice, gridExtra)
+pacman::p_load(raster, gdalUtils, terra, dplyr, rgdal, sp, rhdf5, rlist, randomForest, caTools, caret, maptools, e1071, caretEnsemble, lattice, gridExtra,scales)
 
 mean_na_x <- function(x) {
   e <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
@@ -131,18 +131,19 @@ rf_modelSWIR <- caret::train(x = trn[,(9:21)], y = as.factor(trn$Cover_Crop_PA),
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 rf_modelVISNir <- caret::train(x = trn[,(9:19)], y = as.factor(trn$Cover_Crop_PA),
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-rf_modelNDVI <- caret::train(x = trn[12], y = as.factor(trn$Cover_Crop_PA),
+rf_modelNDVI <- caret::train(x = trn[14], y = as.factor(trn$Cover_Crop_PA),
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-
+rf_modelT_G <- caret::train(x=trn[c(12,21,26)], y=as.factor(trn$Cover_Crop_PA), method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 rf_modelLST
 rf_modelSWIR
 rf_modelVISNir
 rf_modelNDVI
-
+rf_modelT_G
 varImp(rf_modelNDVI)
 varImp(rf_modelVISNir)
 varImp(rf_modelSWIR)
 varImp(rf_modelLST)
+varImp(rf_modelT_G)
 save(rf_modelLST,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA_12_16.RData")
 
 #save(rf_model,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA.RData")
@@ -154,6 +155,7 @@ rf_prediction1 = raster::predict(t16SDH, model=rf_modelLST)
 rf_prediction1_2 = raster::predict(t16SDH, model=rf_modelSWIR)
 rf_prediction1_3 = raster::predict(t16SDH, model=rf_modelVISNir)
 rf_prediction1_4 = raster::predict(t16SDH, model=rf_modelNDVI)
+rf_prediction1_5=raster::predict(t16SDH, model=rf_modelT_G)
 
 writeRaster(rf_prediction1, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/LST_model_PA_12_15.tif")
 
@@ -166,7 +168,8 @@ rasterVis::histogram(rf_prediction2)
 rasterVis::histogram(rf_prediction3)
 rasterVis::histogram(rf_prediction4)
 
-varImpPlot(rf_modelLST)
+varImp(rf_modelLST)
+varImp(rf_modelLST2)
 rf_prediction2= raster::predict(t16TDK, model=rf_modelLST)
 rf_prediction3 = raster::predict(t16TDL, model=rf_modelLST)
 rf_prediction4 = raster::predict(t16TEL, model=rf_modelLST)
@@ -224,10 +227,13 @@ rf_Eval1 = extract(rf_prediction1, eva.sp)
 rf_Eval1_2 = extract(rf_prediction1_2, eva.sp)
 rf_Eval1_3 = extract(rf_prediction1_3, eva.sp)
 rf_Eval1_4 = extract(rf_prediction1_4, eva.sp)
+rf_Eval1_5 = extract(rf_prediction1_5, eva.sp)
 
 rf_Eval2 = extract(rf_prediction2, eva.sp)
 rf_Eval3 = extract(rf_prediction3, eva.sp)
 rf_Eval4 = extract(rf_prediction4, eva.sp)
+rf_Eval5 = extract(rf_prediction5, eva.sp)
+
 #e <- extent(-88.09776,-84.784579,	37.771742, 41.760592)
 #r2 <- raster(e)
 #res(r2) <- c(0.00356, 0.00266)
@@ -246,13 +252,60 @@ rf_errorM1 = confusionMatrix(recode(as.factor(rf_Eval1), "1"= "Conventional", "2
 rf_errorM1_2 = confusionMatrix(recode(as.factor(rf_Eval1_2), "1"= "Conventional", "2"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
 rf_errorM1_3 = confusionMatrix(recode(as.factor(rf_Eval1_3), "1"= "Conventional", "2"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
 rf_errorM1_4 = confusionMatrix(recode(as.factor(rf_Eval1_4), "1"= "Conventional", "2"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM1_5 = confusionMatrix(recode(as.factor(rf_Eval1_5), "1"= "Conventional", "2"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
 rf_errorM1
 rf_errorM1_2
 rf_errorM1_3
 rf_errorM1_4
-
+rf_errorM1_5
 
 # From https://stackoverflow.com/questions/23891140/r-how-to-visualize-confusion-matrix-using-the-caret-package/42940553
+draw_confusion_matrix2 <- function(cm) {
+  
+  layout(matrix(c(1,1,2)))
+  par(mar=c(2,2,2,2))
+  plot(c(100, 345), c(300, 450), type = "n", xlab="", ylab="", xaxt='n', yaxt='n')
+  title('CONFUSION MATRIX', cex.main=2)
+  
+  # create the matrix 
+  rect(150, 430, 240, 370, col='#3F97D0')
+  text(195, 435, 'Class1', cex=1.2)
+  rect(250, 430, 340, 370, col='#F7AD50')
+  text(295, 435, 'Class2', cex=1.2)
+  text(125, 370, 'Predicted', cex=1.3, srt=90, font=2)
+  text(245, 450, 'Actual', cex=1.3, font=2)
+  rect(150, 305, 240, 365, col='#F7AD50')
+  rect(250, 305, 340, 365, col='#3F97D0')
+  text(140, 400, 'Class1', cex=1.2, srt=90)
+  text(140, 335, 'Class2', cex=1.2, srt=90)
+  
+  # add in the cm results 
+  res <- as.numeric(cm$table)
+  text(195, 400, res[1], cex=1.6, font=2, col='white')
+  text(195, 335, res[2], cex=1.6, font=2, col='white')
+  text(295, 400, res[3], cex=1.6, font=2, col='white')
+  text(295, 335, res[4], cex=1.6, font=2, col='white')
+  
+  # add in the specifics 
+  plot(c(100, 0), c(100, 0), type = "n", xlab="", ylab="", main = "DETAILS", xaxt='n', yaxt='n')
+  text(10, 85, names(cm$byClass[1]), cex=1.2, font=2)
+  text(10, 70, round(as.numeric(cm$byClass[1]), 3), cex=1.2)
+  text(30, 85, names(cm$byClass[2]), cex=1.2, font=2)
+  text(30, 70, round(as.numeric(cm$byClass[2]), 3), cex=1.2)
+  text(50, 85, names(cm$byClass[5]), cex=1.2, font=2)
+  text(50, 70, round(as.numeric(cm$byClass[5]), 3), cex=1.2)
+  text(70, 85, names(cm$byClass[6]), cex=1.2, font=2)
+  text(70, 70, round(as.numeric(cm$byClass[6]), 3), cex=1.2)
+  text(90, 85, names(cm$byClass[7]), cex=1.2, font=2)
+  text(90, 70, round(as.numeric(cm$byClass[7]), 3), cex=1.2)
+  
+  # add in the accuracy information 
+  text(30, 35, names(cm$overall[1]), cex=1.5, font=2)
+  text(30, 20, round(as.numeric(cm$overall[1]), 3), cex=1.4)
+  text(70, 35, names(cm$overall[2]), cex=1.5, font=2)
+  text(70, 20, round(as.numeric(cm$overall[2]), 3), cex=1.4)
+}  
+
 draw_confusion_matrix <- function(cm) {
   
   total <- sum(cm$table)
@@ -314,7 +367,8 @@ draw_confusion_matrix <- function(cm) {
   text(70, 35, names(cm$overall[2]), cex=1.5, font=2)
   text(70, 20, round(as.numeric(cm$overall[2]), 3), cex=1.4)
 } 
-draw_confusion_matrix(rf_errorM1)
+draw_confusion_matrix2(rf_errorM1)
+draw_confusion_matrix2(rf_errorM1_2)
 draw_confusion_matrix(rf_errorM1_2)
 draw_confusion_matrix(rf_errorM1_3)
 draw_confusion_matrix(rf_errorM1_4)
@@ -326,6 +380,22 @@ rf_errorM1
 rf_errorM2
 rf_errorM3
 rf_errorM4
+
+ggplotConfusionMatrix <- function(m){
+  mytitle <- paste("Accuracy", percent_format()(m$overall[1]),
+                   "Kappa", percent_format()(m$overall[2]))
+  p <-
+    ggplot(data = as.data.frame(m$table) ,
+           aes(x = Reference, y = Prediction)) +
+    geom_tile(aes(fill = log(Freq)), colour = "white") +
+    scale_fill_gradient(low = "white", high = "steelblue") +
+    geom_text(aes(x = Reference, y = Prediction, label = Freq)) +
+    theme(legend.position = "none") +
+    ggtitle(mytitle)
+  return(p)
+}
+
+ggplotConfusionMatrix(rf_errorM1)
 
 gc()
 #Second grouping- 3 class model-----
@@ -358,7 +428,7 @@ rf_modelSWIR2 <- caret::train(x = trn[,(9:21)], y = as.factor(trn$Cover_Crop_Spe
                              method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 rf_modelVISNir2 <- caret::train(x = trn[,(9:19)], y = as.factor(trn$Cover_Crop_Specific),
                                method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-rf_modelNDVI2 <- caret::train(x = trn[12], y = as.factor(trn$Cover_Crop_Specific),
+rf_modelNDVI2 <- caret::train(x = trn[14], y = as.factor(trn$Cover_Crop_Specific),
                              method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 
 rf_modelLST2
