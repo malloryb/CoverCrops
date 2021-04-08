@@ -133,7 +133,7 @@ rf_modelVISNir <- caret::train(x = trn[,(9:19)], y = as.factor(trn$Cover_Crop_PA
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 rf_modelNDVI <- caret::train(x = trn[14], y = as.factor(trn$Cover_Crop_PA),
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-rf_modelT_G <- caret::train(x=trn[c(12,21,26)], y=as.factor(trn$Cover_Crop_PA), method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
+rf_modelT_G <- caret::train(x=trn[c(14,26)], y=as.factor(trn$Cover_Crop_PA), method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 rf_modelLST
 rf_modelSWIR
 rf_modelVISNir
@@ -144,7 +144,7 @@ varImp(rf_modelVISNir)
 varImp(rf_modelSWIR)
 varImp(rf_modelLST)
 varImp(rf_modelT_G)
-save(rf_modelLST,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA_12_16.RData")
+save(rf_modelLST,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA_4_8.RData")
 
 #save(rf_model,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA.RData")
 #random forest model evalaute
@@ -248,11 +248,11 @@ rf_Eval5 = extract(rf_prediction5, eva.sp)
 #b <- resample(b,r2)
 #plot(calc(stack(f,d,c,b), mean_na))
 
-rf_errorM1 = confusionMatrix(recode(as.factor(rf_Eval1), "1"= "Conventional", "2"="CoverCrop"),as.factor(eva$Cover_Crop_PA),positive="CoverCrop")
-rf_errorM1_2 = confusionMatrix(recode(as.factor(rf_Eval1_2), "1"= "Conventional", "2"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
-rf_errorM1_3 = confusionMatrix(recode(as.factor(rf_Eval1_3), "1"= "Conventional", "2"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
-rf_errorM1_4 = confusionMatrix(recode(as.factor(rf_Eval1_4), "1"= "Conventional", "2"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
-rf_errorM1_5 = confusionMatrix(recode(as.factor(rf_Eval1_5), "1"= "Conventional", "2"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM1 = confusionMatrix(recode(as.factor(rf_Eval1), "2"= "Conventional", "1"="CoverCrop"),as.factor(eva$Cover_Crop_PA),positive="CoverCrop")
+rf_errorM1_2 = confusionMatrix(recode(as.factor(rf_Eval1_2), "2"= "Conventional", "1"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM1_3 = confusionMatrix(recode(as.factor(rf_Eval1_3), "2"= "Conventional", "1"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM1_4 = confusionMatrix(recode(as.factor(rf_Eval1_4), "2"= "Conventional", "1"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM1_5 = confusionMatrix(recode(as.factor(rf_Eval1_5), "2"= "Conventional", "1"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
 rf_errorM1
 rf_errorM1_2
 rf_errorM1_3
@@ -373,9 +373,9 @@ draw_confusion_matrix(rf_errorM1_2)
 draw_confusion_matrix(rf_errorM1_3)
 draw_confusion_matrix(rf_errorM1_4)
 
-rf_errorM2 = confusionMatrix(recode(as.factor(rf_Eval2), "1"= "Conventional", "2"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
-rf_errorM3 = confusionMatrix(recode(as.factor(rf_Eval3), "1"= "Conventional", "2"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
-rf_errorM4 = confusionMatrix(recode(as.factor(rf_Eval4), "1"= "Conventional", "2"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM2 = confusionMatrix(recode(as.factor(rf_Eval2), "2"= "Conventional", "1"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM3 = confusionMatrix(recode(as.factor(rf_Eval3), "2"= "Conventional", "1"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM4 = confusionMatrix(recode(as.factor(rf_Eval4), "2"= "Conventional", "1"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
 rf_errorM1
 rf_errorM2
 rf_errorM3
