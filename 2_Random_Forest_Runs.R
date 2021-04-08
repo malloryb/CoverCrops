@@ -73,14 +73,14 @@ plyr::count(All_counties_input$CC_Method)
 #Cover Crop Presence Absence Category: 0 = no cover crop,  2 = "Cover Crop" 
 #Cover Crop Specific Category: 0 = nothing (presumably conventional tillage), 1= 'No-Till', 2 = "Cover crop".  
 
-All_counties_input$Cover_Crop_Specific <- "Conventional"
-All_counties_input$Cover_Crop_Specific[All_counties_input$Fall_Tilla == "N" | All_counties_input$Fall_Tilla == "n"] <- "Residue"
+All_counties_input$Cover_Crop_Specific <- "AConventional"
+All_counties_input$Cover_Crop_Specific[All_counties_input$Fall_Tilla == "N" | All_counties_input$Fall_Tilla == "n"] <- "BResidue"
 All_counties_input$Cover_Crop_Specific[All_counties_input$Cover_Crop != "N"] <- "CoverCrop"
 All_counties_input$Cover_Crop_Specific <- as.factor(All_counties_input$Cover_Crop_Specific)
 levels(as.factor(All_counties_input$Cover_Crop_Specific))
 
 #recode cover crop: 
-All_counties_input$Cover_Crop_PA <- "Conventional"
+All_counties_input$Cover_Crop_PA <- "AConventional"
 All_counties_input$Cover_Crop_PA[All_counties_input$Cover_Crop == "A" | All_counties_input$Cover_Crop=="B" | All_counties_input$Cover_Crop=="BC"| All_counties_input$Cover_Crop=="C"| All_counties_input$Cover_Crop=="W" | All_counties_input$Cover_Crop=="G"] <- "CoverCrop"
 All_counties_input$Cover_Crop_PA <- as.factor(All_counties_input$Cover_Crop_PA)
 head(All_counties_input)
@@ -248,11 +248,11 @@ rf_Eval5 = extract(rf_prediction5, eva.sp)
 #b <- resample(b,r2)
 #plot(calc(stack(f,d,c,b), mean_na))
 
-rf_errorM1 = confusionMatrix(recode(as.factor(rf_Eval1), "2"= "Conventional", "1"="CoverCrop"),as.factor(eva$Cover_Crop_PA),positive="CoverCrop")
-rf_errorM1_2 = confusionMatrix(recode(as.factor(rf_Eval1_2), "2"= "Conventional", "1"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
-rf_errorM1_3 = confusionMatrix(recode(as.factor(rf_Eval1_3), "2"= "Conventional", "1"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
-rf_errorM1_4 = confusionMatrix(recode(as.factor(rf_Eval1_4), "2"= "Conventional", "1"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
-rf_errorM1_5 = confusionMatrix(recode(as.factor(rf_Eval1_5), "2"= "Conventional", "1"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM1 = confusionMatrix(recode(as.factor(rf_Eval1), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA),positive="CoverCrop")
+rf_errorM1_2 = confusionMatrix(recode(as.factor(rf_Eval1_2), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM1_3 = confusionMatrix(recode(as.factor(rf_Eval1_3), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM1_4 = confusionMatrix(recode(as.factor(rf_Eval1_4), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM1_5 = confusionMatrix(recode(as.factor(rf_Eval1_5), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
 rf_errorM1
 rf_errorM1_2
 rf_errorM1_3
@@ -373,9 +373,9 @@ draw_confusion_matrix(rf_errorM1_2)
 draw_confusion_matrix(rf_errorM1_3)
 draw_confusion_matrix(rf_errorM1_4)
 
-rf_errorM2 = confusionMatrix(recode(as.factor(rf_Eval2), "2"= "Conventional", "1"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
-rf_errorM3 = confusionMatrix(recode(as.factor(rf_Eval3), "2"= "Conventional", "1"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
-rf_errorM4 = confusionMatrix(recode(as.factor(rf_Eval4), "2"= "Conventional", "1"="CoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM2 = confusionMatrix(recode(as.factor(rf_Eval2), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM3 = confusionMatrix(recode(as.factor(rf_Eval3), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM4 = confusionMatrix(recode(as.factor(rf_Eval4), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
 rf_errorM1
 rf_errorM2
 rf_errorM3
@@ -489,10 +489,10 @@ rf2_Eval3 = extract(rf2_prediction3, eva.sp)
 rf2_Eval4 = extract(rf2_prediction4, eva.sp)
 
 
-rf2_errorM1 = confusionMatrix(recode(as.factor(rf2_Eval1), "1"= "Conventional", "2"="CoverCrop", "3"="Residue"),as.factor(eva$Cover_Crop_Specific))
-rf2_errorM1_2 = confusionMatrix(recode(as.factor(rf2_Eval1_2), "1"= "Conventional", "2"="CoverCrop", "3"="Residue"),as.factor(eva$Cover_Crop_Specific))
-rf2_errorM1_3 = confusionMatrix(recode(as.factor(rf2_Eval1_3), "1"= "Conventional", "2"="CoverCrop", "3"="Residue"),as.factor(eva$Cover_Crop_Specific))
-rf2_errorM1_4 = confusionMatrix(recode(as.factor(rf2_Eval1_4), "1"= "Conventional", "2"="CoverCrop", "3"="Residue"),as.factor(eva$Cover_Crop_Specific))
+rf2_errorM1 = confusionMatrix(recode(as.factor(rf2_Eval1), "1"= "Conventional", "2"="ACoverCrop", "3"="BResidue"),as.factor(eva$Cover_Crop_Specific))
+rf2_errorM1_2 = confusionMatrix(recode(as.factor(rf2_Eval1_2), "1"= "Conventional", "2"="ACoverCrop", "3"="BResidue"),as.factor(eva$Cover_Crop_Specific))
+rf2_errorM1_3 = confusionMatrix(recode(as.factor(rf2_Eval1_3), "1"= "Conventional", "2"="ACoverCrop", "3"="BResidue"),as.factor(eva$Cover_Crop_Specific))
+rf2_errorM1_4 = confusionMatrix(recode(as.factor(rf2_Eval1_4), "1"= "Conventional", "2"="ACoverCrop", "3"="BResidue"),as.factor(eva$Cover_Crop_Specific))
 draw_confusion_matrix(rf2_errorM1)
 draw_confusion_matrix(rf2_errorM1_2)
 draw_confusion_matrix(rf2_errorM1_3)
