@@ -314,17 +314,34 @@ raster::plot(Pred1cmask)
 #t16TEL_masked <- mask(t16TEL,Cropmask)
 
 #Let's look at side by side plots of: Category, P/A, NDVI, SWIR, and  LST
+#Fig 4-----
+LSTmerged <- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Input_LST_12_20.tif")
+t16SDH<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16SDH _input_stack.tif")
+w <- raster::crop(LSTmerged, t16SDH)
+w <- raster::resample(w, t16SDH)
+t16SDH <- raster::addLayer(t16SDH,w)
+names(t16SDH) <-  c("B3_med", "B5_med", "B6_med", "NDVI_med", "NDVI_mean", "NDVI_max", "NDVI_min", "NDVI_fullmax", "NDVI_amp", 
+                    "NDVI_ratio", "GDD", "SINDRI_med", "STI_med", "B9_med", "B10_med", "therm_ratio", "B10_fullmax", "LST")
 
+Pred1 <- raster::stack("/Volumes/G-RAID_Thunderbolt3/Yoder_Project/Pred1pamask.tif")
+Pred1c <- raster::stack("/Volumes/G-RAID_Thunderbolt3/Yoder_Project/Pred1catmask.tif")
 raster::plot(Pred1)
 raster::plot(Pred1c)
 raster::plot(t16SDH[[4]])
 raster::plot(t16SDH[[12]]) 
 raster::plot(t16SDH[[18]])
 
+coul <- rev(heat.colors(100))
+coul2 <- rev(terrain.colors(100))
+
 tststack <- raster::stack(Pred1, Pred1c, t16SDH[[4]], t16SDH[[13]], t16SDH[[18]])
-levelplot(tststack)
-rasterVis::levelplot(Pred1)
-rasterVis::levelplot(Pred1c)
-rasterVis::levelplot(t16SDH[[4]])
-rasterVis::levelplot(t16SDH[[12]])
-rasterVis::levelplot(t16SDH[[18]])
+rasterVis::levelplot(tststack)
+posey <- extent(-88.028, -87.59, 37.87, 38.27)
+freq(crop(Pred1cmask, posey))
+freq(crop(Pred1mask, posey))
+rasterVis::levelplot(crop(Pred1mask,posey), col.regions=c('midnightblue', 'palegreen'))
+rasterVis::levelplot(crop(Pred1cmask,posey), col.regions=c('midnightblue', 'palegreen', 'yellow'))
+rasterVis::levelplot(crop(t16SDH[[4]], posey), col.regions=coul2, margin=FALSE)
+rasterVis::levelplot(crop(t16SDH[[12]],posey),at=seq(-0.5,0.5, length=20), col.regions=coul2, margin=FALSE)
+
+rasterVis::levelplot(crop(t16SDH[[18]],posey), at=seq(15,35, length=20),col.regions=coul, contour=FALSE, margin=FALSE)
