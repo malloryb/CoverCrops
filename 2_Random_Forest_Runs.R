@@ -135,23 +135,23 @@ rf_modelNDVI <- caret::train(x = trn[14], y = as.factor(trn$Cover_Crop_PA),
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 rf_modelT_G <- caret::train(x=trn[c(14,26)], y=as.factor(trn$Cover_Crop_PA), method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 rf_modelLST$finalModel
-rf_modelSWIR
-rf_modelVISNir
-rf_modelNDVI
-rf_modelT_G
+rf_modelSWIR$finalModel
+rf_modelVISNir$finalModel
+rf_modelNDVI$finalModel
+rf_modelT_G$finalModel
 varImp(rf_modelNDVI)
 varImp(rf_modelVISNir)
 varImp(rf_modelSWIR)
 varImp(rf_modelLST)
 varImp(rf_modelT_G)
 save(rf_modelLST,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA_4_8.RData")
-rf_modelLST <- get(load("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA_4_8.RData"))
+#rf_modelLST <- get(load("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA_4_8.RData"))
 #save(rf_model,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA.RData")
 #random forest model evalaute
 ## Apply the models to data. It took my imac 16 minutes to apply the random forest model
 # Apply the random forest model to the HLS data-----
 gc()
-rf_prediction1 = raster::predict(t16SDH, model=rf_modelLST)
+rf_prediction1 = raster::predict(t16SDH, model=rf_modelLST$finalModel)
 rf_prediction1_2 = raster::predict(t16SDH, model=rf_modelSWIR)
 rf_prediction1_3 = raster::predict(t16SDH, model=rf_modelVISNir)
 rf_prediction1_4 = raster::predict(t16SDH, model=rf_modelNDVI)
@@ -386,14 +386,14 @@ rf_modelVISNir2 <- caret::train(x = trn[,(9:19)], y = as.factor(trn$Cover_Crop_S
 rf_modelNDVI2 <- caret::train(x = trn[14], y = as.factor(trn$Cover_Crop_Specific),
                              method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 
-rf_modelLST2
+rf_modelLST2$finalModel
 rf_modelSWIR2
 rf_modelNDVI2
 rf_modelVISNir2
 
 
 rf_model2
-varImp(rf_modelLST)
+varImp(rf_modelLST2)
 save(rf_modelLST2,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_Cat_4_10.RData")
 
 #random forest model evalaute
