@@ -73,15 +73,15 @@ plyr::count(All_counties_input$CC_Method)
 #Cover Crop Presence Absence Category: 0 = no cover crop,  2 = "Cover Crop" 
 #Cover Crop Specific Category: 0 = nothing (presumably conventional tillage), 1= 'No-Till', 2 = "Cover crop".  
 
-All_counties_input$Cover_Crop_Specific <- "AConventional"
+All_counties_input$Cover_Crop_Specific <- "Conventional"
 All_counties_input$Cover_Crop_Specific[All_counties_input$Fall_Tilla == "N" | All_counties_input$Fall_Tilla == "n"] <- "BResidue"
-All_counties_input$Cover_Crop_Specific[All_counties_input$Cover_Crop != "N"] <- "CoverCrop"
+All_counties_input$Cover_Crop_Specific[All_counties_input$Cover_Crop != "N"] <- "ACoverCrop"
 All_counties_input$Cover_Crop_Specific <- as.factor(All_counties_input$Cover_Crop_Specific)
 levels(as.factor(All_counties_input$Cover_Crop_Specific))
 
 #recode cover crop: 
-All_counties_input$Cover_Crop_PA <- "AConventional"
-All_counties_input$Cover_Crop_PA[All_counties_input$Cover_Crop == "A" | All_counties_input$Cover_Crop=="B" | All_counties_input$Cover_Crop=="BC"| All_counties_input$Cover_Crop=="C"| All_counties_input$Cover_Crop=="W" | All_counties_input$Cover_Crop=="G"] <- "CoverCrop"
+All_counties_input$Cover_Crop_PA <- "Conventional"
+All_counties_input$Cover_Crop_PA[All_counties_input$Cover_Crop == "A" | All_counties_input$Cover_Crop=="B" | All_counties_input$Cover_Crop=="BC"| All_counties_input$Cover_Crop=="C"| All_counties_input$Cover_Crop=="W" | All_counties_input$Cover_Crop=="G"] <- "ACoverCrop"
 All_counties_input$Cover_Crop_PA <- as.factor(All_counties_input$Cover_Crop_PA)
 head(All_counties_input)
 #All_counties_input <- subset(All_counties_input, select=-c(B9_med))
@@ -134,7 +134,7 @@ rf_modelVISNir <- caret::train(x = trn[,(9:19)], y = as.factor(trn$Cover_Crop_PA
 rf_modelNDVI <- caret::train(x = trn[14], y = as.factor(trn$Cover_Crop_PA),
                          method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
 rf_modelT_G <- caret::train(x=trn[c(14,26)], y=as.factor(trn$Cover_Crop_PA), method = "rf", metric="Kappa", trainControl = tc, tuneGrid = rf.grid)
-rf_modelLST
+rf_modelLST$finalModel
 rf_modelSWIR
 rf_modelVISNir
 rf_modelNDVI
@@ -145,7 +145,7 @@ varImp(rf_modelSWIR)
 varImp(rf_modelLST)
 varImp(rf_modelT_G)
 save(rf_modelLST,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA_4_8.RData")
-
+rf_modelLST <- get(load("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA_4_8.RData"))
 #save(rf_model,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA.RData")
 #random forest model evalaute
 ## Apply the models to data. It took my imac 16 minutes to apply the random forest model
@@ -157,8 +157,8 @@ rf_prediction1_3 = raster::predict(t16SDH, model=rf_modelVISNir)
 rf_prediction1_4 = raster::predict(t16SDH, model=rf_modelNDVI)
 rf_prediction1_5=raster::predict(t16SDH, model=rf_modelT_G)
 
-writeRaster(rf_prediction1, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/LST_model_PA_12_15.tif")
-
+writeRaster(rf_prediction1, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/LST_model_PA_4_21.tif")
+rf_prediction1 <- raster("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/LST_model_PA_4_21.tif")
 raster::plot(rf_prediction1)
 library(ggplot2)
 library(reshape2)
@@ -248,11 +248,11 @@ rf_Eval5 = extract(rf_prediction5, eva.sp)
 #b <- resample(b,r2)
 #plot(calc(stack(f,d,c,b), mean_na))
 
-rf_errorM1 = confusionMatrix(recode(as.factor(rf_Eval1), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA),positive="CoverCrop")
-rf_errorM1_2 = confusionMatrix(recode(as.factor(rf_Eval1_2), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
-rf_errorM1_3 = confusionMatrix(recode(as.factor(rf_Eval1_3), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
-rf_errorM1_4 = confusionMatrix(recode(as.factor(rf_Eval1_4), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
-rf_errorM1_5 = confusionMatrix(recode(as.factor(rf_Eval1_5), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM1 = confusionMatrix(recode(as.factor(rf_Eval1), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA),positive="ACoverCrop")
+rf_errorM1_2 = confusionMatrix(recode(as.factor(rf_Eval1_2), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="ACoverCrop")
+rf_errorM1_3 = confusionMatrix(recode(as.factor(rf_Eval1_3), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="ACoverCrop")
+rf_errorM1_4 = confusionMatrix(recode(as.factor(rf_Eval1_4), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="ACoverCrop")
+rf_errorM1_5 = confusionMatrix(recode(as.factor(rf_Eval1_5), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="ACoverCrop")
 rf_errorM1
 rf_errorM1_2
 rf_errorM1_3
@@ -260,51 +260,6 @@ rf_errorM1_4
 rf_errorM1_5
 
 # From https://stackoverflow.com/questions/23891140/r-how-to-visualize-confusion-matrix-using-the-caret-package/42940553
-draw_confusion_matrix2 <- function(cm) {
-  
-  layout(matrix(c(1,1,2)))
-  par(mar=c(2,2,2,2))
-  plot(c(100, 345), c(300, 450), type = "n", xlab="", ylab="", xaxt='n', yaxt='n')
-  title('CONFUSION MATRIX', cex.main=2)
-  
-  # create the matrix 
-  rect(150, 430, 240, 370, col='#3F97D0')
-  text(195, 435, 'Class1', cex=1.2)
-  rect(250, 430, 340, 370, col='#F7AD50')
-  text(295, 435, 'Class2', cex=1.2)
-  text(125, 370, 'Predicted', cex=1.3, srt=90, font=2)
-  text(245, 450, 'Actual', cex=1.3, font=2)
-  rect(150, 305, 240, 365, col='#F7AD50')
-  rect(250, 305, 340, 365, col='#3F97D0')
-  text(140, 400, 'Class1', cex=1.2, srt=90)
-  text(140, 335, 'Class2', cex=1.2, srt=90)
-  
-  # add in the cm results 
-  res <- as.numeric(cm$table)
-  text(195, 400, res[1], cex=1.6, font=2, col='white')
-  text(195, 335, res[2], cex=1.6, font=2, col='white')
-  text(295, 400, res[3], cex=1.6, font=2, col='white')
-  text(295, 335, res[4], cex=1.6, font=2, col='white')
-  
-  # add in the specifics 
-  plot(c(100, 0), c(100, 0), type = "n", xlab="", ylab="", main = "DETAILS", xaxt='n', yaxt='n')
-  text(10, 85, names(cm$byClass[1]), cex=1.2, font=2)
-  text(10, 70, round(as.numeric(cm$byClass[1]), 3), cex=1.2)
-  text(30, 85, names(cm$byClass[2]), cex=1.2, font=2)
-  text(30, 70, round(as.numeric(cm$byClass[2]), 3), cex=1.2)
-  text(50, 85, names(cm$byClass[5]), cex=1.2, font=2)
-  text(50, 70, round(as.numeric(cm$byClass[5]), 3), cex=1.2)
-  text(70, 85, names(cm$byClass[6]), cex=1.2, font=2)
-  text(70, 70, round(as.numeric(cm$byClass[6]), 3), cex=1.2)
-  text(90, 85, names(cm$byClass[7]), cex=1.2, font=2)
-  text(90, 70, round(as.numeric(cm$byClass[7]), 3), cex=1.2)
-  
-  # add in the accuracy information 
-  text(30, 35, names(cm$overall[1]), cex=1.5, font=2)
-  text(30, 20, round(as.numeric(cm$overall[1]), 3), cex=1.4)
-  text(70, 35, names(cm$overall[2]), cex=1.5, font=2)
-  text(70, 20, round(as.numeric(cm$overall[2]), 3), cex=1.4)
-}  
 
 draw_confusion_matrix <- function(cm) {
   
@@ -367,15 +322,15 @@ draw_confusion_matrix <- function(cm) {
   text(70, 35, names(cm$overall[2]), cex=1.5, font=2)
   text(70, 20, round(as.numeric(cm$overall[2]), 3), cex=1.4)
 } 
-draw_confusion_matrix2(rf_errorM1)
-draw_confusion_matrix2(rf_errorM1_2)
+draw_confusion_matrix(rf_errorM1)
+draw_confusion_matrix(rf_errorM1_2)
 draw_confusion_matrix(rf_errorM1_2)
 draw_confusion_matrix(rf_errorM1_3)
 draw_confusion_matrix(rf_errorM1_4)
 
-rf_errorM2 = confusionMatrix(recode(as.factor(rf_Eval2), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
-rf_errorM3 = confusionMatrix(recode(as.factor(rf_Eval3), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
-rf_errorM4 = confusionMatrix(recode(as.factor(rf_Eval4), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="CoverCrop")
+rf_errorM2 = confusionMatrix(recode(as.factor(rf_Eval2), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="ACoverCrop")
+rf_errorM3 = confusionMatrix(recode(as.factor(rf_Eval3), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="ACoverCrop")
+rf_errorM4 = confusionMatrix(recode(as.factor(rf_Eval4), "2"= "Conventional", "1"="ACoverCrop"),as.factor(eva$Cover_Crop_PA), positive="ACoverCrop")
 rf_errorM1
 rf_errorM2
 rf_errorM3
@@ -439,7 +394,7 @@ rf_modelVISNir2
 
 rf_model2
 varImp(rf_modelLST)
-save(rf_modelLST2,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_Cat_12_16.RData")
+save(rf_modelLST2,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_Cat_4_10.RData")
 
 #random forest model evalaute
 ## Apply the models to data. It took my imac 16 minutes to apply the random forest model
@@ -449,7 +404,7 @@ rf2_prediction1_2 = raster::predict(t16SDH, model=rf_modelSWIR2)
 rf2_prediction1_3 = raster::predict(t16SDH, model=rf_modelVISNir2)
 rf2_prediction1_4 = raster::predict(t16SDH, model=rf_modelNDVI2)
 
-writeRaster(rf2_prediction1, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/LST_model_3class_12_11.tif")
+writeRaster(rf2_prediction1, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/LST_model_3class_4_10.tif")
 
 rf2_prediction2= raster::predict(t16TDK, model=rf_model2)
 rf2_prediction3 = raster::predict(t16TDL, model=rf_model2)
