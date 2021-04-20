@@ -14,7 +14,6 @@ mean_na_x <- function(x) {
   print(res(y))
   return(y)
 }
-
 #First load all the stacks 
 LSTmerged <- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/Input_LST_12_20.tif")
 t16SDH<- raster::stack("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/ 16SDH _input_stack.tif")
@@ -145,7 +144,11 @@ varImp(rf_modelSWIR)
 varImp(rf_modelLST)
 varImp(rf_modelT_G)
 save(rf_modelLST,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA_4_8.RData")
+<<<<<<< HEAD
 #rf_modelLST <- get(load("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA_4_8.RData"))
+=======
+rf_modelLST <- get(load("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA_4_8.RData"))
+>>>>>>> 65e65e1d91281d9b3f03c8ab3d4e1e587d9b04b7
 #save(rf_model,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_PA.RData")
 #random forest model evalaute
 ## Apply the models to data. It took my imac 16 minutes to apply the random forest model
@@ -158,7 +161,11 @@ rf_prediction1_4 = raster::predict(t16SDH, model=rf_modelNDVI)
 rf_prediction1_5=raster::predict(t16SDH, model=rf_modelT_G)
 
 writeRaster(rf_prediction1, "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/LST_model_PA_4_21.tif")
+<<<<<<< HEAD
 rf_prediction1 <- raster("/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/LST_model_PA_4_21.tif")
+=======
+
+>>>>>>> 65e65e1d91281d9b3f03c8ab3d4e1e587d9b04b7
 raster::plot(rf_prediction1)
 library(ggplot2)
 library(reshape2)
@@ -393,7 +400,11 @@ rf_modelVISNir2
 
 
 rf_model2
+<<<<<<< HEAD
 varImp(rf_modelLST2)
+=======
+varImp(rf_modelLST)
+>>>>>>> 65e65e1d91281d9b3f03c8ab3d4e1e587d9b04b7
 save(rf_modelLST2,file = "/Volumes/G-RAID_Thunderbolt3/HLS30_Indiana/2015_2016_Input_Bands/RandomForest_LST_Cat_4_10.RData")
 
 #random forest model evalaute
